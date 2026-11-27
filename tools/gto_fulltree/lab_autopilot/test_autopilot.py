@@ -278,6 +278,30 @@ check('패널 세트: 2단계부터 bal, 1단계 재계산은 prec', env2.get('F
 compile(open(os.path.join(W, 'tools/gto_fulltree/ft60.py')).read(), 'ft60.py', 'exec')
 check('덮어쓴 ft60.py 문법 정상', True)
 
+
+# 특별 작업 대기열(enqueue/dequeue): 형식 검사, 중복 방지, 대기열이 있으면 새 스택 일을 시작하지 않음(돌고 있는 일이 있으면 기다림)
+ok1, _ = ap.apply_command({'cmd': 'enqueue', 'kind': '3way_full', 'board': '9c8d2c'})
+ok2, _ = ap.apply_command({'cmd': 'enqueue', 'kind': '3way_full', 'board': '9c8d2c'})
+ok3, _ = ap.apply_command({'cmd': 'enqueue', 'kind': '3way_full', 'board': 'XYZ'})
+ok4, _ = ap.apply_command({'cmd': 'enqueue', 'kind': 'other', 'board': 'AcKhJd'})
+ap.apply_command({'cmd': 'enqueue', 'kind': '3way_full', 'board': 'AcKhJd'})
+check('enqueue: 정상 추가·중복 무시·형식 오류 거부', ok1 and ok2 and not ok3 and not ok4 and [x['id'] for x in ap.special_pending()] == ['3way_9c8d2c', '3way_AcKhJd'])
+_disk = ap.cfg['disk']['min_free_gb']; ap.cfg['disk']['min_free_gb'] = 0   # 시험 컨테이너 디스크와 무관하게
+busy = type('J', (A.Job,), {'is_alive': lambda s: True})(ap, 'board', '30', 1, 'board_5', None, 3)
+ap.jobs[('30', 1, 'board_5')] = busy
+before = dict(ap.jobs)
+r = ap.schedule()
+check('대기열 있음 + 돌고 있는 일 있음 → 새 일 시작 안 함', r == 0 and set(ap.jobs) == set(before), str(list(ap.jobs)))
+del ap.jobs[('30', 1, 'board_5')]
+r = ap.schedule()
+check('대기열 있음 + 빈 컴퓨터 → (시험 모드) 스택 일 대신 특별 작업 차례', r == 0 and not any(k[0] == '30' for k in ap.jobs))
+ap.cfg['disk']['min_free_gb'] = _disk
+okd, _ = ap.apply_command({'cmd': 'dequeue', 'board': '9c8d2c'})
+check('dequeue', okd and [x['id'] for x in ap.special_pending()] == ['3way_AcKhJd'])
+ap.state['special_done'].append('3way_AcKhJd')
+check('끝난 특별 작업은 대기열에서 빠짐', ap.special_pending() == [])
+d = ap.status_doc(); check('상태에 special 항목', 'special' in d and d['special']['done'][-1] == '3way_AcKhJd')
+
 # 자체 점검 + 업데이트 실패 시 이전 버전 유지
 r = subprocess.run([sys.executable, os.path.join(HERE, 'autopilot.py'), 'selfcheck'], capture_output=True, text=True, env=dict(os.environ, LAB_CONFIG=cfgp, FT_NO_PUSH='1'))
 check('selfcheck 통과(문법·판정 재현·드라이런)', r.returncode == 0 and 'SELFCHECK_OK' in r.stdout, (r.stdout + r.stderr)[-200:])

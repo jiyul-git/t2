@@ -730,6 +730,8 @@ class Autopilot:
         self.jobs = {}
         self.state = self._load_state()
         self.state.setdefault('ctl', {'paused': False, 'paused_stacks': [], 'priority': None, 'skip': [], 'stack': {}, 'cfg': {}, 'applied': {}})
+        self.state['ctl'].setdefault('special', [])       # 특별 작업 대기열(원격 명령 enqueue): 스택 일보다 먼저, 컴퓨터를 혼자 쓰며 차례로
+        self.state.setdefault('special_done', [])
         self.view, self.claims = {}, {}
         self.t_refresh = self.t_status = self.t_hb = self.t_control = self.t_watch = self.t_update = 0
         self.errors = []
@@ -873,6 +875,28 @@ class Autopilot:
             return
         if self.update_pending_since or self.restart_requested:
             return
+        q = self.special_pending()
+        if q:            # 특별 작업이 있으면 새 스택 일은 시작하지 않고, 돌고 있는 일이 묶음 경계에서 끝나기를 기다렸다가 혼자 돌린다
+            if any(isinstance(j, Job) and j.is_alive() for j in self.jobs.values()):
+                return 0
+            it = q[0]
+            if mem is not None and mem < float(it.get('min_mem_gb', 28)):
+                self.alert('special_low_mem', ('special', 0, it['id']), 'warn', '특별 작업 %s 에 메모리 %.0fGB 필요, 여유 %.1fGB — 기다림' % (it['id'], float(it.get('min_mem_gb', 28)), mem), ttl_h=6)
+                return 0
+            self.clear('special_low_mem')
+            key = ('special', 0, it['id'])
+            if self.blocked(key):
+                return 0
+            if self.dry:
+                log.info('(시험) 특별 작업 시작: %s', it)
+                return 0
+            j = Job(self, 'special', 'special', 0, it['id'], self.job_special, cap)
+            j.item = it
+            j.no_progress_h = 4.0
+            self.jobs[key] = j
+            j.start()
+            log.info('특별 작업 시작: %s', it)
+            return 1
         plan = self.candidates()
         started = 0
         nboards = sum(1 for j in self.jobs.values() if j.kind == 'board' and j.is_alive())
@@ -907,7 +931,7 @@ class Autopilot:
     def reap(self):
         for key, j in list(self.jobs.items()):
             if hasattr(j, 'is_alive') and not j.is_alive() and isinstance(j, Job):
-                self.hub.release(*key) if not self.no_push else None
+                self.hub.release(*key) if not self.no_push and j.kind != 'special' else None
                 k = '|'.join(map(str, key))
                 if j.result == 'ok':
                     self.state['fails'].pop(k, None)
@@ -1019,8 +1043,8 @@ class Autopilot:
                 job.err_alert_clear = True
                 self.clear('solver_rc', job.key); self.clear('process_dead', job.key); self.clear('push_failed', job.key)
                 self.after_bundle(S, k, left[0], res(left[0]))
-                if self.update_pending_since and any(not os.path.exists(res(b)) for b in B):
-                    return 'ok'        # 묶음 경계: 새 봇 코드로 교체하러 감(claim 은 풀리고 새 봇이 이어서)
+                if (self.update_pending_since or self.special_pending()) and any(not os.path.exists(res(b)) for b in B):
+                    return 'ok'        # 묶음 경계: 새 봇 코드 교체 또는 특별 작업에 자리 내줌(claim 은 풀리고 나중에 이어서)
                 continue
             if 'input sha256 differs' in tail:
                 raise JobFail('input_changed', '입력이 바뀜(input sha256 differs) — 조정 쪽 확인 필요', L)
@@ -1034,6 +1058,65 @@ class Autopilot:
             if br in self.hub.heads:
                 g.run('pull', '-q', '--no-edit', '--no-rebase', 'origin', br)
             g.run('merge', '-q', '--no-edit', 'origin/claude/ft%s_coord' % S)
+
+    # --- 특별 작업(원격 명령 enqueue). 지금은 kind='3way_full' 하나: 세 명 플랍 전체(턴·리버 전부) 풀이 = lab_3way.sh 와 같은 계산
+    SPECIAL_BR = 'claude/lab_3way_results'       # 결과 브랜치(작은 고아 브랜치). data/gto_3way_probe/<board>_full.{json,log}
+
+    def special_pending(self):
+        done = set(self.state.get('special_done', []))
+        return [it for it in self.state['ctl'].get('special', []) if it['id'] not in done]
+
+    def job_special(self, job):
+        it = job.item
+        if it.get('kind') != '3way_full':
+            raise JobFail('special_bad', '모르는 특별 작업 %s' % it.get('kind'))
+        board, iters = it['board'], int(it.get('iters', 300))
+        L = os.path.join(self.root, 'logs', '3way_%s.log' % board)
+        job.log = L
+        src = it.get('term_branch', 'claude/ft3way_lab_1')
+        self.hub.heads.update(self.hub.remote_heads(['refs/heads/' + src, 'refs/heads/' + self.SPECIAL_BR]))
+        for br in (src, self.SPECIAL_BR):
+            if br in self.hub.heads:
+                self.hub.fetch(br, force=True)
+        for br in (self.SPECIAL_BR, src):          # 이미 누가 올렸으면 끝
+            if br in self.hub.heads and self.hub.show(br, 'data/gto_3way_probe/%s_full.json' % board):
+                self.state.setdefault('special_done', []).append(it['id'])
+                log.info('특별 작업 %s: 결과가 이미 %s 에 있음 — 건너뜀', it['id'], br)
+                return 'ok'
+        term = self.hub.show(src, it.get('term', 'tools/gto_3way_probe/term3_btn_sb_bb.json'))
+        if not term:
+            raise JobFail('special_bad', '끝점 파일을 %s 에서 못 읽음' % src)
+        ex = os.path.join(self.env.calc, 'vendor/gtopen')
+        if not os.path.exists(os.path.join(ex, 'crates/solver/examples/t2_3way.rs')):
+            raise JobFail('special_bad', 't2_3way.rs 없음(%s)' % ex)
+        env = self.env.base('special', threads=self.cfg['cpu']['total_cores'])
+        if runlog(self.env.nice + ['cargo', 'build', '--release', '--example', 't2_3way'], ex, env, L) != 0:
+            raise JobFail('solver_rc', 't2_3way 빌드 실패', L)
+        wd = self.env.work('_3way')
+        os.makedirs(wd, exist_ok=True)
+        job.workdir = wd
+        tf = os.path.join(wd, 'term.json')
+        open(tf, 'wb').write(term)
+        out = os.path.join(wd, '%s_full.json' % board)
+        job.progress = '%s 반복 최대 %d' % (board, iters)
+        rc = runlog(self.env.nice + [os.path.join(ex, 'target/release/examples/t2_3way'), 'solve', tf, board, str(iters), out, '--every', '25', '--target', '0.1'], wd, env, L)
+        if job.cancelled:
+            raise JobFail('cancelled', '원격 명령으로 취소')
+        if rc != 0 or not os.path.exists(out):
+            raise JobFail('solver_rc', 't2_3way 종료코드 %s' % rc, L)
+
+        def fn(wt):
+            d = os.path.join(wt, 'data/gto_3way_probe')
+            os.makedirs(d, exist_ok=True)
+            shutil.copy(out, d)
+            if os.path.exists(out + '.partial'):
+                shutil.copy(out + '.partial', d)
+            open(os.path.join(d, '%s_full.log' % board), 'w').write('\n'.join(tail_lines(L, 400)) + '\n')
+            return True
+        if not self.hub.mutate(self.SPECIAL_BR, 'lab3way_wt', fn, '3way lab full flop: %s (autopilot)' % board):
+            raise JobFail('push_failed', '결과 푸시 실패(%s)' % self.SPECIAL_BR, L)
+        self.state.setdefault('special_done', []).append(it['id'])
+        return 'ok'
 
     def bundle_taken(self, S, n, b):
         """이 묶음을 다른 브랜치가 이미 끝냈거나(done) 최근에 푸시 중이면 True — 최신 깃허브 읽기(view) 기준."""
@@ -1583,6 +1666,29 @@ class Autopilot:
                 return False, '허용되지 않은 설정(%s)' % path
             ctl['cfg'][path] = c.get('value')
             return True, '%s = %s' % (path, c.get('value'))
+        if cmd == 'enqueue':          # {"id":"x1","cmd":"enqueue","kind":"3way_full","board":"9c8d2c","iters":300}
+            if c.get('kind') != '3way_full':
+                return False, 'kind 는 3way_full 만'
+            b = str(c.get('board', ''))
+            if not re.fullmatch(r'([2-9TJQKA][cdhs]){3}', b):
+                return False, '보드 형식 오류 %s' % b
+            sid = str(c.get('item_id') or '3way_' + b)
+            if any(x['id'] == sid for x in ctl['special']):
+                return True, '이미 대기열에 있음 %s' % sid
+            it = {'id': sid, 'kind': '3way_full', 'board': b, 'iters': int(c.get('iters', 300))}
+            for kx in ('term', 'term_branch', 'min_mem_gb'):
+                if kx in c:
+                    it[kx] = c[kx]
+            ctl['special'].append(it)
+            return True, '특별 작업 대기열 추가 %s (대기 %d개) — 돌고 있는 묶음이 끝나면 시작' % (sid, len(self.special_pending()))
+        if cmd == 'dequeue':
+            sid = str(c.get('item_id') or '3way_' + str(c.get('board', '')))
+            n0 = len(ctl['special'])
+            ctl['special'] = [x for x in ctl['special'] if x['id'] != sid]
+            for jk, j in self.jobs.items():
+                if isinstance(j, Job) and j.is_alive() and j.kind == 'special' and jk[2] == sid:
+                    j.cancel()
+            return True, '대기열에서 뺌 %s (%d개)' % (sid, n0 - len(ctl['special']))
         if cmd == 'restart':
             self.restart_requested = True
             return True, '일이 끝나면 봇을 다시 시작'
@@ -1613,6 +1719,7 @@ class Autopilot:
              'stacks': {}, 'alerts': al, 'recent_errors': self.errors[-10:],
              'control': {'applied': dict(list(self.state['ctl']['applied'].items())[-15:]), 'skip': self.state['ctl']['skip'], 'priority': self.state['ctl']['priority'],
                          'cfg_overrides': self.state['ctl']['cfg'], 'stack_overrides': self.state['ctl']['stack']},
+             'special': {'queue': [x['id'] for x in self.special_pending()], 'done': self.state.get('special_done', [])[-10:]},
              'blocked': {k: iso(dt.datetime.fromtimestamp(t, dt.timezone.utc)) for k, t in self.state['blocked'].items() if t > time.time()}}
         for S, sv in self.view.items():
             e = {'phase': sv.phase, 'why': sv.why, 'step': sv.K, 'coord_tip_age_h': None if sv.last_commit_age_h is None else round(sv.last_commit_age_h, 1),
@@ -1630,6 +1737,8 @@ class Autopilot:
     def md_status(self, d):
         l = ['# 연구실 봇 상태: **%s** — %s (%s)' % (d['status'], d['time'], d['mode']), '', '- 호스트 %s, 가동 %.1f시간, 코드 %s, CPU %s/%s 코어, 메모리 여유 %s GB, 디스크 여유 %s GB' % (
             d['host'], d['uptime_h'], d['code_release'] or d['code_sha'], d['cpu']['in_use'], d['cpu']['budget'], d['mem_avail_gb'], d['disk_free_gb'])]
+        if d.get('special', {}).get('queue'):
+            l += ['- 특별 작업 대기열(먼저 함): ' + ', '.join(d['special']['queue'])]
         l += ['- 지금 하는 일: ' + (', '.join('ft%s 단계%s %s(%s)' % (j['stack'], j['step'], j['unit'], j['progress']) for j in d['jobs']) or '없음 (대기)')]
         for S, e in d['stacks'].items():
             l.append('- **%sbb** 단계 %s: %s — %s' % (S, e['step'], e['phase'], e['why']))

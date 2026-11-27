@@ -142,6 +142,8 @@
   {"id": "c5", "cmd": "retry",  "stack": "30", "unit": "board_7"}, // 실패·대기·건너뜀 기록 지움(stack/unit 생략 가능)
   {"id": "c6", "cmd": "priority", "order": ["60", "30"]},          // 스택 우선순위
   {"id": "c7", "cmd": "stack", "stack": "60", "enabled": false},   // enabled / boards / coord_actions
+  {"id": "c8", "cmd": "enqueue", "kind": "3way_full", "board": "9c8d2c", "iters": 300},  // 특별 작업 대기열(아래)
+  {"id": "c9", "cmd": "dequeue", "board": "9c8d2c"},              // 대기열에서 빼기(실행 중이면 취소)
   {"id": "c8", "cmd": "config", "path": "cpu.boards_parallel", "value": 1},
   {"id": "c9", "cmd": "restart"}                                    // 일이 끝나면 봇 다시 시작
 ]}
@@ -190,3 +192,10 @@ ft30 기본: `FT_MIN_REACH=1e-3`, `FT_SESSIONS=20`, `FT_MATRIX_ALL=1`, 풀이 `F
 | NC-5 | 로그인 없이 부팅만으로 시작? | 사용자에게 확인 필요(8장) |
 | NC-6 | 풀이 체크포인트 | 코디 답: 처음부터 정확 gap<0.02 로 OK |
 | NC-7 | 세 명 끝점 표 | 코디 답: 아직 넣지 않음(설정 off) |
+
+
+## 특별 작업 대기열 (2026-11-27 추가)
+- 원격 명령 `enqueue` 로 넣는다. 지금 종류는 `3way_full` 하나: 세 명 플랍 전체(턴 49 × 리버 48) 풀이, `lab_3way.sh` 와 같은 계산(끝점 `tools/gto_3way_probe/term3_btn_sb_bb.json` 을 `claude/ft3way_lab_1` 에서 읽음, 메모리 약 27GB).
+- 대기열에 일이 있으면: 새 스택 일(보드·조정)을 시작하지 않고, 돌고 있는 보드 일은 **지금 묶음이 끝나는 경계에서** 멈춘다(claim 풀림, 나중에 이어서). 컴퓨터가 비면 특별 작업을 하나씩, 코어 전부(`cpu.total_cores`)로 돌린다. 메모리 여유가 `min_mem_gb`(기본 28)보다 적으면 기다린다(경고 special_low_mem).
+- 결과: 고아 브랜치 `claude/lab_3way_results` 의 `data/gto_3way_probe/<보드>_full.json` (+ .partial, 로그 꼬리). 이미 이 브랜치나 `claude/ft3way_lab_1` 에 결과가 있으면 건너뛴다.
+- 대기열이 비면 평소 스택 일로 돌아간다. 상태: status.json 의 `special.queue / special.done`, status.md 의 "특별 작업 대기열" 줄.
