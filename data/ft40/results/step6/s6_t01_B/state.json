@@ -5,11 +5,14 @@
   12,
   24,
   36,
-  48
+  48,
+  60
  ],
  "boards_done": [
+  "5c3s2s",
   "6d6s5d",
   "7h7s6d",
+  "8d4s2s",
   "9d7s2h",
   "9h7s4d",
   "9h8h3h",
@@ -41,9 +44,11 @@
   "AsQhJc",
   "AsTc8d",
   "JcJd4c",
+  "JcTc3s",
   "Jd9h6s",
   "Jh5h3h",
   "Jh6s2d",
+  "Js8d7s",
   "Kc8c8h",
   "KcQd8h",
   "KdJdTd",
