@@ -1,10 +1,10 @@
 {
  "schema": "lab_status_v1",
  "status": "ok",
- "time": "2026-11-26T21:49:44Z",
+ "time": "2026-11-27T03:51:07Z",
  "host": "DESKTOP-FUUG7O5",
  "owner": "t2-lab",
- "uptime_h": 13.6,
+ "uptime_h": 19.7,
  "mode": "live",
  "code_release": "89a54b7211",
  "code_sha": "89a54b721",
@@ -22,7 +22,7 @@
   ]
  },
  "mem_avail_gb": null,
- "disk_free_gb": 84.7,
+ "disk_free_gb": 84.1,
  "paused": {
   "all": false,
   "stacks": []
@@ -33,18 +33,18 @@
    "step": 2,
    "unit": "board_1",
    "started": "2026-11-26T10:33:55Z",
-   "progress": "0/3 묶음",
-   "cpu_idle_min": 0,
-   "file_idle_min": 13
+   "progress": "2/3 묶음",
+   "cpu_idle_min": 5,
+   "file_idle_min": 1
   },
   {
    "stack": "30",
    "step": 2,
    "unit": "board_2",
    "started": "2026-11-26T10:33:58Z",
-   "progress": "1/3 묶음",
-   "cpu_idle_min": 4,
-   "file_idle_min": 0
+   "progress": "2/3 묶음",
+   "cpu_idle_min": 5,
+   "file_idle_min": 2
   }
  ],
  "stacks": {
@@ -52,27 +52,27 @@
    "phase": "boards",
    "why": "보드 번호 0/20 끝",
    "step": 2,
-   "coord_tip_age_h": 265.7,
+   "coord_tip_age_h": 271.7,
    "stall_streak": 0,
    "boards": {
     "1": {
      "done": false,
      "bundles": {
-      "s2_t00_A": "partial",
-      "s2_t10_A": "none",
-      "s2_t20_A": "none"
+      "s2_t00_A": "done",
+      "s2_t10_A": "done",
+      "s2_t20_A": "partial"
      },
-     "tip_age_h": 1.1,
+     "tip_age_h": 0.1,
      "claim": "t2-lab"
     },
     "2": {
      "done": false,
      "bundles": {
-      "s2_t00_B": "partial",
-      "s2_t10_B": "none",
-      "s2_t20_B": "none"
+      "s2_t00_B": "done",
+      "s2_t10_B": "done",
+      "s2_t20_B": "partial"
      },
-     "tip_age_h": 1.2,
+     "tip_age_h": 0.2,
      "claim": "t2-lab"
     },
     "3": {
@@ -82,7 +82,7 @@
       "s2_t11_A": "none",
       "s2_t21_A": "none"
      },
-     "tip_age_h": 429.6,
+     "tip_age_h": 435.7,
      "claim": null
     },
     "4": {
@@ -92,7 +92,7 @@
       "s2_t11_B": "none",
       "s2_t21_B": "none"
      },
-     "tip_age_h": 429.5,
+     "tip_age_h": 435.5,
      "claim": null
     },
     "5": {
@@ -102,7 +102,7 @@
       "s2_t12_A": "none",
       "s2_t22_A": "none"
      },
-     "tip_age_h": 429.5,
+     "tip_age_h": 435.6,
      "claim": null
     },
     "6": {
@@ -112,7 +112,7 @@
       "s2_t12_B": "none",
       "s2_t22_B": "none"
      },
-     "tip_age_h": 349.2,
+     "tip_age_h": 355.2,
      "claim": null
     },
     "7": {
@@ -122,7 +122,7 @@
       "s2_t13_A": "none",
       "s2_t23_A": "none"
      },
-     "tip_age_h": 348.1,
+     "tip_age_h": 354.1,
      "claim": null
     },
     "8": {
@@ -132,7 +132,7 @@
       "s2_t13_B": "none",
       "s2_t23_B": "none"
      },
-     "tip_age_h": 343.4,
+     "tip_age_h": 349.4,
      "claim": null
     },
     "9": {
@@ -141,7 +141,7 @@
       "s2_t04_A": "none",
       "s2_t14_A": "none"
      },
-     "tip_age_h": 341.7,
+     "tip_age_h": 347.7,
      "claim": null
     },
     "10": {
@@ -150,7 +150,7 @@
       "s2_t04_B": "none",
       "s2_t14_B": "none"
      },
-     "tip_age_h": 337.7,
+     "tip_age_h": 343.7,
      "claim": null
     },
     "11": {
@@ -159,7 +159,7 @@
       "s2_t05_A": "none",
       "s2_t15_A": "none"
      },
-     "tip_age_h": 330.1,
+     "tip_age_h": 336.1,
      "claim": null
     },
     "12": {
@@ -168,7 +168,7 @@
       "s2_t05_B": "none",
       "s2_t15_B": "none"
      },
-     "tip_age_h": 327.1,
+     "tip_age_h": 333.1,
      "claim": null
     },
     "13": {
@@ -177,7 +177,7 @@
       "s2_t06_A": "none",
       "s2_t16_A": "none"
      },
-     "tip_age_h": 321.3,
+     "tip_age_h": 327.3,
      "claim": null
     },
     "14": {
@@ -186,7 +186,7 @@
       "s2_t06_B": "none",
       "s2_t16_B": "none"
      },
-     "tip_age_h": 318.2,
+     "tip_age_h": 324.2,
      "claim": null
     },
     "15": {
@@ -195,7 +195,7 @@
       "s2_t07_A": "none",
       "s2_t17_A": "none"
      },
-     "tip_age_h": 313.2,
+     "tip_age_h": 319.2,
      "claim": null
     },
     "16": {
@@ -204,7 +204,7 @@
       "s2_t07_B": "none",
       "s2_t17_B": "none"
      },
-     "tip_age_h": 278.9,
+     "tip_age_h": 284.9,
      "claim": null
     },
     "17": {
@@ -213,7 +213,7 @@
       "s2_t08_A": "none",
       "s2_t18_A": "none"
      },
-     "tip_age_h": 273.1,
+     "tip_age_h": 279.1,
      "claim": null
     },
     "18": {
@@ -222,7 +222,7 @@
       "s2_t08_B": "none",
       "s2_t18_B": "none"
      },
-     "tip_age_h": 269.8,
+     "tip_age_h": 275.9,
      "claim": null
     },
     "19": {
@@ -231,7 +231,7 @@
       "s2_t09_A": "none",
       "s2_t19_A": "none"
      },
-     "tip_age_h": 265.9,
+     "tip_age_h": 272.0,
      "claim": null
     },
     "20": {
@@ -240,7 +240,7 @@
       "s2_t09_B": "none",
       "s2_t19_B": "none"
      },
-     "tip_age_h": 428.8,
+     "tip_age_h": 434.8,
      "claim": null
     }
    }
@@ -249,7 +249,7 @@
    "phase": "boards",
    "why": "보드 번호 0/20 끝",
    "step": 6,
-   "coord_tip_age_h": 4.8,
+   "coord_tip_age_h": 10.8,
    "stall_streak": 0,
    "boards": {
     "1": {
@@ -260,7 +260,7 @@
       "s6_t20_A": "partial",
       "s6_t30_A": "partial"
      },
-     "tip_age_h": 1.8,
+     "tip_age_h": 7.9,
      "claim": null
     },
     "2": {
@@ -271,7 +271,7 @@
       "s6_t20_B": "partial",
       "s6_t30_B": "none"
      },
-     "tip_age_h": 3.1,
+     "tip_age_h": 9.1,
      "claim": null
     },
     "3": {
@@ -282,7 +282,7 @@
       "s6_t21_A": "partial",
       "s6_t31_A": "none"
      },
-     "tip_age_h": 1.1,
+     "tip_age_h": 7.1,
      "claim": null
     },
     "4": {
@@ -293,7 +293,7 @@
       "s6_t21_B": "partial",
       "s6_t31_B": "partial"
      },
-     "tip_age_h": 1.5,
+     "tip_age_h": 3.0,
      "claim": null
     },
     "5": {
@@ -304,7 +304,7 @@
       "s6_t22_A": "none",
       "s6_t32_A": "none"
      },
-     "tip_age_h": 0.9,
+     "tip_age_h": 7.0,
      "claim": null
     },
     "6": {
@@ -315,7 +315,7 @@
       "s6_t22_B": "none",
       "s6_t32_B": "none"
      },
-     "tip_age_h": 3.2,
+     "tip_age_h": 9.2,
      "claim": null
     },
     "7": {
@@ -326,7 +326,7 @@
       "s6_t23_A": "none",
       "s6_t33_A": "none"
      },
-     "tip_age_h": 1.2,
+     "tip_age_h": 7.2,
      "claim": null
     },
     "8": {
@@ -337,7 +337,7 @@
       "s6_t23_B": "none",
       "s6_t33_B": "none"
      },
-     "tip_age_h": 0.7,
+     "tip_age_h": 6.7,
      "claim": null
     },
     "9": {
@@ -348,7 +348,7 @@
       "s6_t24_A": "partial",
       "s6_t34_A": "none"
      },
-     "tip_age_h": 3.4,
+     "tip_age_h": 9.4,
      "claim": null
     },
     "10": {
@@ -359,7 +359,7 @@
       "s6_t24_B": "none",
       "s6_t34_B": "none"
      },
-     "tip_age_h": 2.7,
+     "tip_age_h": 8.7,
      "claim": null
     },
     "11": {
@@ -369,7 +369,7 @@
       "s6_t15_A": "none",
       "s6_t25_A": "none"
      },
-     "tip_age_h": 1.2,
+     "tip_age_h": 7.3,
      "claim": null
     },
     "12": {
@@ -379,7 +379,7 @@
       "s6_t15_B": "none",
       "s6_t25_B": "none"
      },
-     "tip_age_h": 1.2,
+     "tip_age_h": 7.3,
      "claim": null
     },
     "13": {
@@ -399,7 +399,7 @@
       "s6_t16_B": "none",
       "s6_t26_B": "none"
      },
-     "tip_age_h": 1.4,
+     "tip_age_h": 7.4,
      "claim": null
     },
     "15": {
@@ -409,7 +409,7 @@
       "s6_t17_A": "none",
       "s6_t27_A": "none"
      },
-     "tip_age_h": 0.7,
+     "tip_age_h": 6.7,
      "claim": null
     },
     "16": {
@@ -419,7 +419,7 @@
       "s6_t17_B": "none",
       "s6_t27_B": "none"
      },
-     "tip_age_h": 0.5,
+     "tip_age_h": 6.5,
      "claim": null
     },
     "17": {
@@ -429,7 +429,7 @@
       "s6_t18_A": "none",
       "s6_t28_A": "none"
      },
-     "tip_age_h": 3.6,
+     "tip_age_h": 9.6,
      "claim": null
     },
     "18": {
@@ -439,7 +439,7 @@
       "s6_t18_B": "none",
       "s6_t28_B": "none"
      },
-     "tip_age_h": 0.7,
+     "tip_age_h": 6.8,
      "claim": null
     },
     "19": {
@@ -449,7 +449,7 @@
       "s6_t19_A": "none",
       "s6_t29_A": "none"
      },
-     "tip_age_h": 1.0,
+     "tip_age_h": 7.0,
      "claim": null
     },
     "20": {
@@ -459,7 +459,7 @@
       "s6_t19_B": "none",
       "s6_t29_B": "none"
      },
-     "tip_age_h": 1.2,
+     "tip_age_h": 7.3,
      "claim": null
     }
    }
@@ -468,7 +468,7 @@
    "phase": "collect",
    "why": "묶음 전부 끝 → collect",
    "step": 4,
-   "coord_tip_age_h": 270.2,
+   "coord_tip_age_h": 276.2,
    "stall_streak": 0,
    "boards": {
     "1": {
@@ -479,7 +479,7 @@
       "s4_t29_A": "done",
       "s4_t39_A": "done"
      },
-     "tip_age_h": 277.3,
+     "tip_age_h": 283.4,
      "claim": null
     },
     "2": {
@@ -490,7 +490,7 @@
       "s4_t29_B": "done",
       "s4_t39_B": "done"
      },
-     "tip_age_h": 264.6,
+     "tip_age_h": 270.6,
      "claim": null
     },
     "3": {
@@ -501,7 +501,7 @@
       "s4_t28_A": "done",
       "s4_t38_A": "done"
      },
-     "tip_age_h": 280.8,
+     "tip_age_h": 286.9,
      "claim": null
     },
     "4": {
@@ -512,7 +512,7 @@
       "s4_t28_B": "done",
       "s4_t38_B": "done"
      },
-     "tip_age_h": 278.5,
+     "tip_age_h": 284.6,
      "claim": null
     },
     "5": {
@@ -523,7 +523,7 @@
       "s4_t27_A": "done",
       "s4_t37_A": "done"
      },
-     "tip_age_h": 276.2,
+     "tip_age_h": 282.2,
      "claim": null
     },
     "6": {
@@ -534,7 +534,7 @@
       "s4_t27_B": "done",
       "s4_t37_B": "done"
      },
-     "tip_age_h": 281.4,
+     "tip_age_h": 287.4,
      "claim": null
     },
     "7": {
@@ -545,7 +545,7 @@
       "s4_t20_A": "done",
       "s4_t30_A": "done"
      },
-     "tip_age_h": 274.8,
+     "tip_age_h": 280.9,
      "claim": null
     },
     "8": {
@@ -556,7 +556,7 @@
       "s4_t20_B": "done",
       "s4_t30_B": "done"
      },
-     "tip_age_h": 267.3,
+     "tip_age_h": 273.3,
      "claim": null
     },
     "9": {
@@ -567,7 +567,7 @@
       "s4_t21_A": "done",
       "s4_t31_A": "done"
      },
-     "tip_age_h": 275.8,
+     "tip_age_h": 281.9,
      "claim": null
     },
     "10": {
@@ -578,7 +578,7 @@
       "s4_t21_B": "done",
       "s4_t31_B": "done"
      },
-     "tip_age_h": 274.9,
+     "tip_age_h": 280.9,
      "claim": null
     },
     "11": {
@@ -587,7 +587,7 @@
       "s4_t05_A": "done",
       "s4_t12_A": "done"
      },
-     "tip_age_h": 280.8,
+     "tip_age_h": 286.9,
      "claim": null
     },
     "12": {
@@ -598,7 +598,7 @@
       "s4_t22_B": "done",
       "s4_t32_B": "done"
      },
-     "tip_age_h": 277.6,
+     "tip_age_h": 283.6,
      "claim": null
     },
     "13": {
@@ -609,7 +609,7 @@
       "s4_t23_A": "done",
       "s4_t33_A": "done"
      },
-     "tip_age_h": 264.1,
+     "tip_age_h": 270.1,
      "claim": null
     },
     "14": {
@@ -620,7 +620,7 @@
       "s4_t23_B": "done",
       "s4_t33_B": "done"
      },
-     "tip_age_h": 275.6,
+     "tip_age_h": 281.6,
      "claim": null
     },
     "15": {
@@ -631,7 +631,7 @@
       "s4_t24_A": "done",
       "s4_t34_A": "done"
      },
-     "tip_age_h": 274.8,
+     "tip_age_h": 280.8,
      "claim": null
     },
     "16": {
@@ -640,7 +640,7 @@
       "s4_t07_B": "done",
       "s4_t14_B": "done"
      },
-     "tip_age_h": 281.3,
+     "tip_age_h": 287.3,
      "claim": null
     },
     "17": {
@@ -649,7 +649,7 @@
       "s4_t08_A": "done",
       "s4_t15_A": "done"
      },
-     "tip_age_h": 280.4,
+     "tip_age_h": 286.4,
      "claim": null
     },
     "18": {
@@ -658,7 +658,7 @@
       "s4_t08_B": "done",
       "s4_t15_B": "done"
      },
-     "tip_age_h": 281.4,
+     "tip_age_h": 287.5,
      "claim": null
     },
     "19": {
@@ -667,7 +667,7 @@
       "s4_t09_A": "done",
       "s4_t16_A": "done"
      },
-     "tip_age_h": 285.3,
+     "tip_age_h": 291.3,
      "claim": null
     },
     "20": {
@@ -676,7 +676,7 @@
       "s4_t09_B": "done",
       "s4_t16_B": "done"
      },
-     "tip_age_h": 277.4,
+     "tip_age_h": 283.4,
      "claim": null
     },
     "21": {
@@ -685,7 +685,7 @@
       "s4_t22_A": "done",
       "s4_t32_A": "done"
      },
-     "tip_age_h": 283.3,
+     "tip_age_h": 289.3,
      "claim": null
     },
     "22": {
@@ -694,7 +694,7 @@
       "s4_t24_B": "done",
       "s4_t34_B": "done"
      },
-     "tip_age_h": 282.7,
+     "tip_age_h": 288.7,
      "claim": null
     },
     "23": {
@@ -703,7 +703,7 @@
       "s4_t25_A": "done",
       "s4_t35_A": "done"
      },
-     "tip_age_h": 281.4,
+     "tip_age_h": 287.5,
      "claim": null
     },
     "24": {
@@ -712,7 +712,7 @@
       "s4_t25_B": "done",
       "s4_t35_B": "done"
      },
-     "tip_age_h": 278.0,
+     "tip_age_h": 284.0,
      "claim": null
     },
     "25": {
@@ -721,7 +721,7 @@
       "s4_t26_A": "done",
       "s4_t36_A": "done"
      },
-     "tip_age_h": 275.5,
+     "tip_age_h": 281.5,
      "claim": null
     },
     "26": {
@@ -730,7 +730,7 @@
       "s4_t26_B": "done",
       "s4_t36_B": "done"
      },
-     "tip_age_h": 3.3,
+     "tip_age_h": 9.4,
      "claim": null
     }
    }
@@ -739,7 +739,7 @@
    "phase": "solve",
    "why": "단계 2 표는 있음, 트리 풀이 없음",
    "step": 2,
-   "coord_tip_age_h": 271.8,
+   "coord_tip_age_h": 277.9,
    "stall_streak": 0
   }
  },
