@@ -26,7 +26,9 @@ D = os.path.join(REPO, 'data/ft' + STACK)
 MATRIX_ALL = os.environ.get('FT_MATRIX_ALL', '1') == '1'   # 모든 헤즈업 끝점이 손패×손패 행렬(matrix_sums)을 갖는다(0·1단계 재현은 FT_MATRIX_ALL=0)
 N_TERMS = int(os.environ.get('FT_N_TERMS', '40'))   # 사용자 결정 10-31: 헤즈업 끝점 40개 (ft100: FT_MIN_REACH 로 도달 >= 값인 끝점 전부)
 MIN_REACH = float(os.environ['FT_MIN_REACH']) if os.environ.get('FT_MIN_REACH') else None
-PANELS = {'A': os.path.join(D, 'panels/panel_prec_A72.json'), 'B': os.path.join(D, 'panels/panel_prec_B72.json')}
+PANEL_SET = os.environ.get('FT_PANEL_SET', 'prec')   # 'bal': 숫자·숫자쌍 개수를 맞춘 균형 패널(docs/GTO_PANEL_BALANCE_20261115.md). 5단계부터 bal
+PANELS = {'A': os.path.join(D, 'panels/panel_%s_A72.json' % PANEL_SET), 'B': os.path.join(D, 'panels/panel_%s_B72.json' % PANEL_SET)}
+REPLACE = os.environ.get('FT_REPLACE', '0') == '1'   # next_tables: 1 이면 고른 2명 끝점을 섞지 않고 새 값으로 바꾼다(a=1). 패널 치우침처럼 알려진 오류를 뺄 때
 POS = ['UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB']
 RANKS = '23456789TJQKA'
 
@@ -172,9 +174,18 @@ def prepare(k, ck, dump, n=N_TERMS, sd=None):
     n_sess = int(os.environ.get('FT_SESSIONS', '5'))
     load = [0.0] * n_sess
     assign = []
-    def est_h(r):   # 실측: 3벳 행렬 1.9h / 단일 레이즈 행렬 2.6h(보드 4장 529~569초 ×18) / 단일 레이즈 비행렬 1.4h(279~303초 ×18)
+    meas = {}
+    mf = os.environ.get('FT_BOARD_HOURS')   # 이전 단계 실측(노드 번호 → 시간, wall_min_this_run 중앙값); 없는 노드는 중앙값
+    if mf and os.path.exists(mf):
+        meas = json.load(open(mf))
+    med = sorted(meas.values())[len(meas) // 2] if meas else None
+    def est_h(r):
         if os.environ.get('FT_H_ALL'):   # 스택 전체에 쓰는 실측 상수(예: ft100 약 2.0h)
             return float(os.environ['FT_H_ALL'])
+        if meas:
+            return float(meas.get(str(r['node']), med))
+        return est_h0(r)
+    def est_h0(r):   # 실측: 3벳 행렬 1.9h / 단일 레이즈 행렬 2.6h(보드 4장 529~569초 ×18) / 단일 레이즈 비행렬 1.4h(279~303초 ×18)
         return 1.9 if (r['matrix'] and n_raises(r['line']) >= 2) else 2.6 if r['matrix'] else 1.4
     for r in sorted(rows, key=lambda r: (-est_h(r), -r['reach'], r['bundle'])):
         i = min(range(n_sess), key=lambda x: (load[x], x))
@@ -514,7 +525,7 @@ def next_tables(k):
         h = hist.setdefault(str(node), [])
         h.append(tr['max_D_over_U'])
         cyc = len(h) >= 3 and h[-1] > 1 and (h[-3] - h[-2]) * (h[-2] - h[-1]) < 0
-        a = ALPHA_CYCLE if cyc else ALPHA
+        a = 1.0 if REPLACE else (ALPHA_CYCLE if cyc else ALPHA)
         if node in static_nodes:      # 플랍 실패(재시도 후 > 0.6% pot 등)로 정적 유지로 정한 끝점: 표를 만들지 않는다
             done_nodes.add(node)
             continue

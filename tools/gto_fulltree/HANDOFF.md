@@ -6,6 +6,8 @@
 3. 새 일을 시작하면 RUNNING.md 에 한 줄 추가·푸시, 끝나면 지운다. 로컬에서 긴 계산을 돌리면 `tools/gto_fulltree/ft_progress_push.sh <로그> <저장소 경로> <브랜치> <pgrep 패턴>` 로 진행 기록을 자동 푸시.
 
 ## 1. 한 단계의 흐름 (조정 세션)
+**한 명령:** 보드 결과가 다 모이면 `FT_STACK=<S> setsid nohup bash tools/gto_fulltree/ft_step.sh <k> > log 2>&1 &` — collect → next_tables → 트리 풀이 → prepare → GitHub Actions 보드 계산 시작까지 한 번에(멈춘 곳부터 다시 불러도 됨). 마지막 줄 STEP_READY / STEP_FAIL. 아래는 그 안에서 하는 일.
+
 `ft60.py`(공용, FT_STACK 로 스택 선택) 기준. 작업 폴더 FT_WORK, 계산 체크아웃 /home/user/calc (`sh tools/gto_fulltree/ft_coord_setup.sh`).
 1. 트리 풀이: `FT_STACK=S FT_WORK=... setsid nohup sh tools/gto_fulltree/ft_solve.sh k > log &` — 정확 gap < 0.02 에서 멈추고 dump.jsonl 생성. 4코어 약 2~4시간.
 2. 끝점 준비: `FT_PANEL_SET=bal FT_SESSIONS=<세션수> FT_BOARD_HOURS=data/ft<S>/step<k-1>_board_hours.json python3 tools/gto_fulltree/ft60.py prepare k <ck.gtop> <dump.jsonl>` → bundles.tsv·assign.tsv. 패널은 반드시 균형 패널(bal).
