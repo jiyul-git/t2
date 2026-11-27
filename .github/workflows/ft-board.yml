@@ -56,3 +56,9 @@ jobs:
           if [ -f gha_test_boards ]; then export FT_TEST_BOARDS=$(cat gha_test_boards) FT_NO_PUSH=1; git push -q origin HEAD:refs/heads/claude/gha_pushtest_${{ github.run_id }}_${{ matrix.board }} && echo PUSH_OK; fi
           bash /tmp/ftw.sh ${{ matrix.board }} ${{ matrix.bundles }} | tee /tmp/ftw.out
           tail -1 /tmp/ftw.out | grep -q WORKER_ALL_DONE
+      - name: logs
+        if: always()
+        run: |
+          tail -3 /home/user/gto_ckpt/ft_setup.log || true
+          tail -30 /home/user/gto_ckpt/ft${{ matrix.stack }}_board.log || true
+          cat /home/user/gto_ckpt/ft_worker.log || true
