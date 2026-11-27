@@ -1,8 +1,8 @@
 #!/bin/bash
 # 한 단계 넘기기(조정 세션 일 전부를 한 명령으로). 각 부분은 이미 끝났으면 건너뛴다 → 몇 번이고 다시 불러도 된다.
 #   FT_STACK=60 bash tools/gto_fulltree/ft_step.sh <k>     (k 단계 보드 결과가 다 모였을 때)
-# 순서(마지막에 GitHub Actions 보드 계산 자동 시작): collect k → next_tables k → 트리 풀이 k+1(ft_solve.sh) → 덤프 저장 → prepare k+1(균형 패널, 묶음당 작업 하나)
-#       → used_gross 저장 → gha_jobs.txt(k+1) 작성 → 커밋·푸시. 마지막 줄 STEP_READY <k+1> <묶음수> 또는 STEP_FAIL <이유>.
+# 순서(마지막에 GitHub Actions 보드 계산 자동 시작): collect k → 판정(연구실 봇 judge, continue 일 때만 진행) → next_tables k → 트리 풀이 k+1(ft_solve.sh) → 덤프 저장 → prepare k+1(균형 패널, 묶음당 작업 하나)
+#       → used_gross 저장 → gha_jobs.txt(k+1) 작성 → 커밋·푸시. 마지막 줄 STEP_READY <k+1> <묶음수> / STEP_HOLD <판정> <이유>(종료코드 2) / STEP_FAIL <이유>.
 # 환경: FT_STACK, FT_WORK(기본 /home/user/gto_ckpt/ft<STACK>c), FT_REPLACE(next_tables 섞지 않기, 기본 0),
 #       FT_PREP_ENV(prepare 에 더 줄 환경, 예 "FT_MIN_REACH=0.001").
 set -u
@@ -17,12 +17,29 @@ if [ ! -f $D/step$K/collect/report.json ] || ! grep -q '"complete": true' $D/ste
   grep -q '"complete": true' $D/step$K/collect/report.json || fail "collect incomplete: $(tail -1 $W/collect$K.log | cut -c1-120)"
   commit "step$K collect"
 fi
+# 1.5) 판정(연구실 봇과 같은 코드·기준). continue 일 때만 다음으로. 아니면 STEP_HOLD(사람·조정 세션이 판단)
+AP=$W/lab_autopilot; mkdir -p $AP; git fetch -q origin claude/lab_autopilot && git archive FETCH_HEAD tools/gto_fulltree/lab_autopilot | tar -x -C $W --strip-components=2 || fail "lab_autopilot 받기"
+if [ ! -f $D/step$K1/tables/manifest.json ]; then
+  $PY tools/gto_fulltree/ft_judge.py $AP $ST $K $W/collect_s$K > $W/judge$K.log 2>&1 || fail "judge: $(tail -2 $W/judge$K.log | tr '\n' ' ' | cut -c1-200)"
+  commit "step$K judge"
+  JS=$(tail -1 $W/judge$K.log | awk '{print $2}')
+  [ "$JS" = continue ] || { echo "STEP_HOLD $JS $(grep '^reasons' $W/judge$K.log | cut -c1-250)"; exit 2; }
+fi
 # 2) next_tables k
 [ -f $D/step$K1/tables/manifest.json ] || { $PY tools/gto_fulltree/ft60.py next_tables $K > $W/next$K.log 2>&1 || fail "next_tables"; commit "step$K1 tables"; }
 # 3) 트리 풀이 k+1
 [ -s $W/solve_s$K1/final_n ] && [ -s $W/solve_s$K1/dump.jsonl ] || sh tools/gto_fulltree/ft_solve.sh $K1 > $W/solve$K1.log 2>&1 || fail "solve"
 [ -s $W/solve_s$K1/dump.jsonl ] || fail "no dump"
 mkdir -p $D/step$K1/solve; [ -f $D/step$K1/solve/dump.jsonl.gz ] || { gzip -c $W/solve_s$K1/dump.jsonl > $D/step$K1/solve/dump.jsonl.gz; cp $W/solve_s$K1/final_n $D/step$K1/solve/; cp $W/solve_s$K1/exact_$(cat $W/solve_s$K1/final_n).json $D/step$K1/solve/ 2>/dev/null; commit "step$K1 solve dump"; }
+# 3.5) 실용 수렴(마감 기준): 도달확률 >= FT_FREQ_REACH(0.02) 결정 노드에서 이전 단계 덤프 대비 프리플랍 빈도 변화가 FT_FREQ_STOP(기본 0.02) 미만이면 멈추고 보고
+PREV=$D/step$K/solve/dump.jsonl.gz
+if [ -f $PREV ] && [ ! -f $D/step$K1/freq_change.txt ]; then
+  $PY tools/gto_fulltree/ft_freq_change.py $PREV $W/solve_s$K1/dump.jsonl ${FT_FREQ_REACH:-0.02} > $D/step$K1/freq_change.txt 2>&1 && commit "step$K1 freq change"
+fi
+if [ -f $D/step$K1/freq_change.txt ] && [ "${FT_IGNORE_FREQ:-0}" != 1 ]; then
+  FM=$(awk '/^FREQ_MAX/{print $2}' $D/step$K1/freq_change.txt)
+  python3 -c "import sys; sys.exit(0 if float('$FM') < float('${FT_FREQ_STOP:-0.02}') else 1)" && { echo "STEP_HOLD freq_stable 프리플랍 최대 변화 $FM < ${FT_FREQ_STOP:-0.02} — 차트 단계로"; exit 2; }
+fi
 # 4) prepare k+1 (묶음마다 작업 하나)
 if [ ! -f $D/step$K1/bundles.tsv ]; then
   env ${FT_PREP_ENV:-} FT_PANEL_SET=bal FT_SESSIONS=999 $PY tools/gto_fulltree/ft60.py prepare $K1 $W/solve_s$K1/ck.gtop $W/solve_s$K1/dump.jsonl > $W/prep$K1.log 2>&1 || fail "prepare: $(tail -1 $W/prep$K1.log | cut -c1-120)"
