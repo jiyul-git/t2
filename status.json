@@ -1,20 +1,20 @@
 {
  "schema": "lab_status_v1",
  "status": "warn",
- "time": "2026-11-27T14:57:06Z",
+ "time": "2026-11-27T18:23:30Z",
  "host": "DESKTOP-FUUG7O5",
  "owner": "t2-lab",
- "uptime_h": 30.8,
+ "uptime_h": 34.2,
  "mode": "live",
  "code_release": "89a54b7211",
  "code_sha": "89a54b721",
  "update": {
-  "pending": "0abdd43f33",
+  "pending": null,
   "failed": null
  },
  "cpu": {
   "budget": 6,
-  "in_use": 6,
+  "in_use": 0,
   "load": [
    0.5185546875,
    0.57763671875,
@@ -22,37 +22,18 @@
   ]
  },
  "mem_avail_gb": null,
- "disk_free_gb": 83.4,
+ "disk_free_gb": 83.9,
  "paused": {
   "all": true,
   "stacks": []
  },
- "jobs": [
-  {
-   "stack": "30",
-   "step": 2,
-   "unit": "board_3",
-   "started": "2026-11-27T04:48:02Z",
-   "progress": "2/3 묶음",
-   "cpu_idle_min": 0,
-   "file_idle_min": 0
-  },
-  {
-   "stack": "30",
-   "step": 2,
-   "unit": "board_4",
-   "started": "2026-11-27T04:48:05Z",
-   "progress": "2/3 묶음",
-   "cpu_idle_min": 2,
-   "file_idle_min": 2
-  }
- ],
+ "jobs": [],
  "stacks": {
   "30": {
    "phase": "boards",
    "why": "보드 번호 2/20 끝",
    "step": 2,
-   "coord_tip_age_h": 282.8,
+   "coord_tip_age_h": 286.3,
    "stall_streak": 0,
    "boards": {
     "1": {
@@ -62,7 +43,7 @@
       "s2_t10_A": "done",
       "s2_t20_A": "done"
      },
-     "tip_age_h": 10.0,
+     "tip_age_h": 13.5,
      "claim": null
     },
     "2": {
@@ -72,25 +53,25 @@
       "s2_t10_B": "done",
       "s2_t20_B": "done"
      },
-     "tip_age_h": 10.0,
+     "tip_age_h": 13.5,
      "claim": null
     },
     "3": {
      "done": false,
      "bundles": {
       "s2_t01_A": "done",
-      "s2_t11_A": "partial",
-      "s2_t21_A": "none"
+      "s2_t11_A": "done",
+      "s2_t21_A": "partial"
      },
-     "tip_age_h": 0.3,
+     "tip_age_h": 0.4,
      "claim": "t2-lab"
     },
     "4": {
      "done": false,
      "bundles": {
       "s2_t01_B": "done",
-      "s2_t11_B": "partial",
-      "s2_t21_B": "none"
+      "s2_t11_B": "done",
+      "s2_t21_B": "partial"
      },
      "tip_age_h": 0.4,
      "claim": "t2-lab"
@@ -102,7 +83,7 @@
       "s2_t12_A": "none",
       "s2_t22_A": "none"
      },
-     "tip_age_h": 446.6,
+     "tip_age_h": 450.1,
      "claim": null
     },
     "6": {
@@ -112,7 +93,7 @@
       "s2_t12_B": "none",
       "s2_t22_B": "none"
      },
-     "tip_age_h": 366.2,
+     "tip_age_h": 369.7,
      "claim": null
     },
     "7": {
@@ -122,7 +103,7 @@
       "s2_t13_A": "none",
       "s2_t23_A": "none"
      },
-     "tip_age_h": 365.1,
+     "tip_age_h": 368.7,
      "claim": null
     },
     "8": {
@@ -132,7 +113,7 @@
       "s2_t13_B": "none",
       "s2_t23_B": "none"
      },
-     "tip_age_h": 360.4,
+     "tip_age_h": 363.9,
      "claim": null
     },
     "9": {
@@ -141,7 +122,7 @@
       "s2_t04_A": "none",
       "s2_t14_A": "none"
      },
-     "tip_age_h": 358.7,
+     "tip_age_h": 362.2,
      "claim": null
     },
     "10": {
@@ -150,7 +131,7 @@
       "s2_t04_B": "none",
       "s2_t14_B": "none"
      },
-     "tip_age_h": 354.7,
+     "tip_age_h": 358.2,
      "claim": null
     },
     "11": {
@@ -159,7 +140,7 @@
       "s2_t05_A": "none",
       "s2_t15_A": "none"
      },
-     "tip_age_h": 347.2,
+     "tip_age_h": 350.7,
      "claim": null
     },
     "12": {
@@ -168,7 +149,7 @@
       "s2_t05_B": "none",
       "s2_t15_B": "none"
      },
-     "tip_age_h": 344.1,
+     "tip_age_h": 347.7,
      "claim": null
     },
     "13": {
@@ -177,7 +158,7 @@
       "s2_t06_A": "none",
       "s2_t16_A": "none"
      },
-     "tip_age_h": 338.3,
+     "tip_age_h": 341.9,
      "claim": null
     },
     "14": {
@@ -186,7 +167,7 @@
       "s2_t06_B": "none",
       "s2_t16_B": "none"
      },
-     "tip_age_h": 335.2,
+     "tip_age_h": 338.8,
      "claim": null
     },
     "15": {
@@ -195,7 +176,7 @@
       "s2_t07_A": "none",
       "s2_t17_A": "none"
      },
-     "tip_age_h": 330.2,
+     "tip_age_h": 333.7,
      "claim": null
     },
     "16": {
@@ -204,7 +185,7 @@
       "s2_t07_B": "none",
       "s2_t17_B": "none"
      },
-     "tip_age_h": 295.9,
+     "tip_age_h": 299.4,
      "claim": null
     },
     "17": {
@@ -213,7 +194,7 @@
       "s2_t08_A": "none",
       "s2_t18_A": "none"
      },
-     "tip_age_h": 290.1,
+     "tip_age_h": 293.6,
      "claim": null
     },
     "18": {
@@ -222,7 +203,7 @@
       "s2_t08_B": "none",
       "s2_t18_B": "none"
      },
-     "tip_age_h": 286.9,
+     "tip_age_h": 290.4,
      "claim": null
     },
     "19": {
@@ -231,7 +212,7 @@
       "s2_t09_A": "none",
       "s2_t19_A": "none"
      },
-     "tip_age_h": 283.0,
+     "tip_age_h": 286.5,
      "claim": null
     },
     "20": {
@@ -240,7 +221,7 @@
       "s2_t09_B": "none",
       "s2_t19_B": "none"
      },
-     "tip_age_h": 445.9,
+     "tip_age_h": 449.4,
      "claim": null
     }
    }
@@ -249,7 +230,7 @@
    "phase": "boards",
    "why": "보드 번호 0/20 끝",
    "step": 6,
-   "coord_tip_age_h": 9.5,
+   "coord_tip_age_h": 13.0,
    "stall_streak": 0,
    "boards": {
     "1": {
@@ -260,7 +241,7 @@
       "s6_t20_A": "partial",
       "s6_t30_A": "partial"
      },
-     "tip_age_h": 9.4,
+     "tip_age_h": 13.0,
      "claim": null
     },
     "2": {
@@ -271,7 +252,7 @@
       "s6_t20_B": "partial",
       "s6_t30_B": "none"
      },
-     "tip_age_h": 9.5,
+     "tip_age_h": 13.0,
      "claim": null
     },
     "3": {
@@ -282,7 +263,7 @@
       "s6_t21_A": "partial",
       "s6_t31_A": "none"
      },
-     "tip_age_h": 9.5,
+     "tip_age_h": 13.0,
      "claim": null
     },
     "4": {
@@ -293,7 +274,7 @@
       "s6_t21_B": "partial",
       "s6_t31_B": "partial"
      },
-     "tip_age_h": 9.5,
+     "tip_age_h": 13.0,
      "claim": null
     },
     "5": {
@@ -304,7 +285,7 @@
       "s6_t22_A": "partial",
       "s6_t32_A": "partial"
      },
-     "tip_age_h": 9.1,
+     "tip_age_h": 2.7,
      "claim": null
     },
     "6": {
@@ -315,7 +296,7 @@
       "s6_t22_B": "partial",
       "s6_t32_B": "partial"
      },
-     "tip_age_h": 9.5,
+     "tip_age_h": 13.0,
      "claim": null
     },
     "7": {
@@ -324,9 +305,9 @@
       "s6_t03_A": "partial",
       "s6_t13_A": "partial",
       "s6_t23_A": "none",
-      "s6_t33_A": "none"
+      "s6_t33_A": "partial"
      },
-     "tip_age_h": 9.1,
+     "tip_age_h": 12.6,
      "claim": null
     },
     "8": {
@@ -334,10 +315,10 @@
      "bundles": {
       "s6_t03_B": "partial",
       "s6_t13_B": "none",
-      "s6_t23_B": "none",
+      "s6_t23_B": "partial",
       "s6_t33_B": "none"
      },
-     "tip_age_h": 9.5,
+     "tip_age_h": 13.0,
      "claim": null
     },
     "9": {
@@ -348,7 +329,7 @@
       "s6_t24_A": "partial",
       "s6_t34_A": "none"
      },
-     "tip_age_h": 9.5,
+     "tip_age_h": 13.0,
      "claim": null
     },
     "10": {
@@ -359,7 +340,7 @@
       "s6_t24_B": "none",
       "s6_t34_B": "none"
      },
-     "tip_age_h": 19.7,
+     "tip_age_h": 23.2,
      "claim": null
     },
     "11": {
@@ -369,7 +350,7 @@
       "s6_t15_A": "none",
       "s6_t25_A": "none"
      },
-     "tip_age_h": 18.3,
+     "tip_age_h": 21.8,
      "claim": null
     },
     "12": {
@@ -379,7 +360,7 @@
       "s6_t15_B": "none",
       "s6_t25_B": "none"
      },
-     "tip_age_h": 18.3,
+     "tip_age_h": 21.8,
      "claim": null
     },
     "13": {
@@ -389,7 +370,7 @@
       "s6_t16_A": "none",
       "s6_t26_A": "none"
      },
-     "tip_age_h": 13.8,
+     "tip_age_h": 17.3,
      "claim": null
     },
     "14": {
@@ -399,7 +380,7 @@
       "s6_t16_B": "none",
       "s6_t26_B": "none"
      },
-     "tip_age_h": 18.4,
+     "tip_age_h": 3.0,
      "claim": null
     },
     "15": {
@@ -409,7 +390,7 @@
       "s6_t17_A": "none",
       "s6_t27_A": "none"
      },
-     "tip_age_h": 17.8,
+     "tip_age_h": 21.3,
      "claim": null
     },
     "16": {
@@ -419,7 +400,7 @@
       "s6_t17_B": "none",
       "s6_t27_B": "none"
      },
-     "tip_age_h": 17.5,
+     "tip_age_h": 21.0,
      "claim": null
     },
     "17": {
@@ -429,7 +410,7 @@
       "s6_t18_A": "none",
       "s6_t28_A": "none"
      },
-     "tip_age_h": 20.6,
+     "tip_age_h": 24.1,
      "claim": null
     },
     "18": {
@@ -439,7 +420,7 @@
       "s6_t18_B": "none",
       "s6_t28_B": "none"
      },
-     "tip_age_h": 17.8,
+     "tip_age_h": 21.3,
      "claim": null
     },
     "19": {
@@ -449,7 +430,7 @@
       "s6_t19_A": "none",
       "s6_t29_A": "none"
      },
-     "tip_age_h": 18.0,
+     "tip_age_h": 21.5,
      "claim": null
     },
     "20": {
@@ -459,7 +440,7 @@
       "s6_t19_B": "none",
       "s6_t29_B": "none"
      },
-     "tip_age_h": 18.3,
+     "tip_age_h": 21.8,
      "claim": null
     }
    }
@@ -468,7 +449,7 @@
    "phase": "collect",
    "why": "묶음 전부 끝 → collect",
    "step": 4,
-   "coord_tip_age_h": 287.3,
+   "coord_tip_age_h": 290.8,
    "stall_streak": 0,
    "boards": {
     "1": {
@@ -479,7 +460,7 @@
       "s4_t29_A": "done",
       "s4_t39_A": "done"
      },
-     "tip_age_h": 294.4,
+     "tip_age_h": 297.9,
      "claim": null
     },
     "2": {
@@ -490,7 +471,7 @@
       "s4_t29_B": "done",
       "s4_t39_B": "done"
      },
-     "tip_age_h": 281.6,
+     "tip_age_h": 285.1,
      "claim": null
     },
     "3": {
@@ -501,7 +482,7 @@
       "s4_t28_A": "done",
       "s4_t38_A": "done"
      },
-     "tip_age_h": 297.9,
+     "tip_age_h": 301.4,
      "claim": null
     },
     "4": {
@@ -512,7 +493,7 @@
       "s4_t28_B": "done",
       "s4_t38_B": "done"
      },
-     "tip_age_h": 295.6,
+     "tip_age_h": 299.1,
      "claim": null
     },
     "5": {
@@ -523,7 +504,7 @@
       "s4_t27_A": "done",
       "s4_t37_A": "done"
      },
-     "tip_age_h": 293.2,
+     "tip_age_h": 296.8,
      "claim": null
     },
     "6": {
@@ -534,7 +515,7 @@
       "s4_t27_B": "done",
       "s4_t37_B": "done"
      },
-     "tip_age_h": 298.4,
+     "tip_age_h": 302.0,
      "claim": null
     },
     "7": {
@@ -545,7 +526,7 @@
       "s4_t20_A": "done",
       "s4_t30_A": "done"
      },
-     "tip_age_h": 291.9,
+     "tip_age_h": 295.4,
      "claim": null
     },
     "8": {
@@ -556,7 +537,7 @@
       "s4_t20_B": "done",
       "s4_t30_B": "done"
      },
-     "tip_age_h": 284.3,
+     "tip_age_h": 287.9,
      "claim": null
     },
     "9": {
@@ -567,7 +548,7 @@
       "s4_t21_A": "done",
       "s4_t31_A": "done"
      },
-     "tip_age_h": 292.9,
+     "tip_age_h": 296.4,
      "claim": null
     },
     "10": {
@@ -578,7 +559,7 @@
       "s4_t21_B": "done",
       "s4_t31_B": "done"
      },
-     "tip_age_h": 291.9,
+     "tip_age_h": 295.5,
      "claim": null
     },
     "11": {
@@ -587,7 +568,7 @@
       "s4_t05_A": "done",
       "s4_t12_A": "done"
      },
-     "tip_age_h": 297.9,
+     "tip_age_h": 301.4,
      "claim": null
     },
     "12": {
@@ -598,7 +579,7 @@
       "s4_t22_B": "done",
       "s4_t32_B": "done"
      },
-     "tip_age_h": 294.6,
+     "tip_age_h": 298.1,
      "claim": null
     },
     "13": {
@@ -609,7 +590,7 @@
       "s4_t23_A": "done",
       "s4_t33_A": "done"
      },
-     "tip_age_h": 281.2,
+     "tip_age_h": 284.7,
      "claim": null
     },
     "14": {
@@ -620,7 +601,7 @@
       "s4_t23_B": "done",
       "s4_t33_B": "done"
      },
-     "tip_age_h": 292.6,
+     "tip_age_h": 296.2,
      "claim": null
     },
     "15": {
@@ -631,7 +612,7 @@
       "s4_t24_A": "done",
       "s4_t34_A": "done"
      },
-     "tip_age_h": 291.9,
+     "tip_age_h": 295.4,
      "claim": null
     },
     "16": {
@@ -640,7 +621,7 @@
       "s4_t07_B": "done",
       "s4_t14_B": "done"
      },
-     "tip_age_h": 298.3,
+     "tip_age_h": 301.9,
      "claim": null
     },
     "17": {
@@ -649,7 +630,7 @@
       "s4_t08_A": "done",
       "s4_t15_A": "done"
      },
-     "tip_age_h": 297.4,
+     "tip_age_h": 301.0,
      "claim": null
     },
     "18": {
@@ -658,7 +639,7 @@
       "s4_t08_B": "done",
       "s4_t15_B": "done"
      },
-     "tip_age_h": 298.5,
+     "tip_age_h": 302.0,
      "claim": null
     },
     "19": {
@@ -667,7 +648,7 @@
       "s4_t09_A": "done",
       "s4_t16_A": "done"
      },
-     "tip_age_h": 302.4,
+     "tip_age_h": 305.9,
      "claim": null
     },
     "20": {
@@ -676,7 +657,7 @@
       "s4_t09_B": "done",
       "s4_t16_B": "done"
      },
-     "tip_age_h": 294.4,
+     "tip_age_h": 297.9,
      "claim": null
     },
     "21": {
@@ -685,7 +666,7 @@
       "s4_t22_A": "done",
       "s4_t32_A": "done"
      },
-     "tip_age_h": 300.3,
+     "tip_age_h": 303.8,
      "claim": null
     },
     "22": {
@@ -694,7 +675,7 @@
       "s4_t24_B": "done",
       "s4_t34_B": "done"
      },
-     "tip_age_h": 299.7,
+     "tip_age_h": 303.3,
      "claim": null
     },
     "23": {
@@ -703,7 +684,7 @@
       "s4_t25_A": "done",
       "s4_t35_A": "done"
      },
-     "tip_age_h": 298.5,
+     "tip_age_h": 302.0,
      "claim": null
     },
     "24": {
@@ -712,7 +693,7 @@
       "s4_t25_B": "done",
       "s4_t35_B": "done"
      },
-     "tip_age_h": 295.0,
+     "tip_age_h": 298.6,
      "claim": null
     },
     "25": {
@@ -721,7 +702,7 @@
       "s4_t26_A": "done",
       "s4_t36_A": "done"
      },
-     "tip_age_h": 292.5,
+     "tip_age_h": 296.0,
      "claim": null
     },
     "26": {
@@ -730,7 +711,7 @@
       "s4_t26_B": "done",
       "s4_t36_B": "done"
      },
-     "tip_age_h": 9.5,
+     "tip_age_h": 13.0,
      "claim": null
     }
    }
@@ -739,7 +720,7 @@
    "phase": "solve",
    "why": "단계 2 표는 있음, 트리 풀이 없음",
    "step": 2,
-   "coord_tip_age_h": 0.1,
+   "coord_tip_age_h": 3.1,
    "stall_streak": 0
   }
  },
@@ -749,8 +730,8 @@
    "severity": "warn",
    "key": "ctl",
    "msg": "원격 명령으로 일시정지 중 (전체)",
-   "since": "2026-11-27T14:57:06Z",
-   "last": "2026-11-27T14:57:06Z",
+   "since": "2026-11-27T18:23:28Z",
+   "last": "2026-11-27T18:23:28Z",
    "count": 1,
    "ctx": {}
   }
