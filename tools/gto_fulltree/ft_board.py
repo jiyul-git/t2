@@ -6,7 +6,7 @@
 묶음 하나 = (단계 k 의 헤즈업 끝점 하나, 패널 A 또는 B) 72보드. 묶음 목록 = data/ft60/step<k>/bundles.tsv(모으는 세션이 만든다).
 묶음마다:
   1) 입력 해시 확인: 끝점 파일·패널 파일 sha256 == bundles.tsv (다르면 멈춤 — 옛 단계 입력으로 풀지 않는다).
-  2) 12보드 덩어리마다: solve_panel.py(quick·precision 과 같은 솔버 목표, 3벳 이상 팟은 행렬 모드, 전략 저장 T2_EXPORT_STRATEGY=1)
+  2) CHUNK(기본 4)보드 덩어리마다: solve_panel.py(quick·precision 과 같은 솔버 목표, 3벳 이상 팟은 행렬 모드, 전략 저장 T2_EXPORT_STRATEGY=1)
      → 그 덩어리에서 못 맞춘 플랍은 바로 CFR+ 1회 재시도(개정 11(a), spot_loop.retry_flops 와 같은 명령·같은 목표)
      → 덩어리 결과를 요약해 브랜치에 커밋·푸시. 요약은 모으는 세션의 계산(precision_loop 의 stratified·matrix_from)에 필요한 것 그대로:
         values.json.gz  보드별 두 자리 gross_eps(169) + 솔버 정확도·반복·수렴
@@ -37,7 +37,7 @@ CALC = os.environ.get('FT_CALC', '/home/user/calc')
 STACK = os.environ.get('FT_STACK', '60')          # 공용 도구: 데이터 data/ft<STACK>, 브랜치 claude/ft<STACK>_board_<n>
 WORK = os.environ.get('FT_WORK', '/home/user/gto_ckpt/ft%s_board' % STACK)
 WORKERS = os.environ.get('SPOT_PANEL_WORKERS', '4')
-CHUNK = 12
+CHUNK = int(os.environ.get('FT_CHUNK', '4'))   # 2026-11-27: 12→4. 컨테이너가 죽으면 올리지 않은 덩어리를 통째로 잃는다(12보드면 최대 6시간). 결과는 보드별 독립이라 덩어리 크기와 무관.
 SOURCE_COMMIT = 'census79a9aca6+strategy_patch+ft60'   # 모든 보드 세션이 같은 값(출처키에 들어간다)
 BIN = os.path.join(CALC, 'vendor/gtopen/target/release/examples')
 MENU = os.path.join(CALC, 'data/gto_hu_continuation/menu_m2_single_v1.json')
@@ -152,10 +152,11 @@ def run_bundle(b, r):
     if matrix:
         env['T2_PANEL_MATRIX'] = '1'
     t0 = time.time()
-    for i in range(0, len(boards), CHUNK):
-        if i in st['chunks_done']:
-            continue
-        chunk = boards[i:i + CHUNK]
+    # 2026-11-27: 이미 values 에 들어간 보드는 건너뛰고 남은 보드만 CHUNK 개씩 푼다(덩어리 크기를 바꿔도 이어 풀기 안전, 이중 합산 없음).
+    remaining = [x for x in boards if x not in vals]
+    for j in range(0, len(remaining), CHUNK):
+        chunk = remaining[j:j + CHUNK]
+        i = boards.index(chunk[0])
         # 2026-11-04 (보드 세션 2): 이미 CFR+ 재시도까지 끝난 보드(first_attempt/ 에 첫 결과, 지금 결과는 algo=cfr+)는 출처키의 algo 가
         # 달라 solve_panel(기본 DCFR)이 재사용을 거부한다(rc=1, 정상 동작). 그 보드는 다시 풀지 않고 재시도 결과로 받는다.
         def _retried_already(x):
@@ -234,7 +235,10 @@ def run_bundle(b, r):
                     den[pos][okm] += cc[okm]
             if os.path.exists(os.path.join(fd, x + '.strategy.json')):
                 names.append(x + '.strategy.json')
-        buf = os.path.join(res, 'strategy_%02d.tgz' % (i // CHUNK))
+        si = 0
+        while os.path.exists(os.path.join(res, 'strategy_%02d.tgz' % si)):
+            si += 1
+        buf = os.path.join(res, 'strategy_%02d.tgz' % si)
         with tarfile.open(buf + '.tmp', 'w:gz') as t:
             for f in names:
                 t.add(os.path.join(fd, f), arcname=f)
