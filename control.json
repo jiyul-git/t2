@@ -1,5 +1,5 @@
 {
- "seq": 2,
+ "seq": 3,
  "commands": [
   {
    "id": "c1",
@@ -30,6 +30,11 @@
    "cmd": "stack",
    "stack": "60",
    "enabled": false
+  },
+  {
+   "id": "c6",
+   "cmd": "pause",
+   "note": "세 명 플랍 전체 풀이 3개를 먼저 하기 위해 새 일 시작 중지(진행 중 묶음은 계속). 새 봇 코드(특별 작업 대기열) 적용 뒤 enqueue + resume 예정"
   }
  ]
 }
