@@ -3,6 +3,9 @@
 ## 일하는 방식 (사용자 지시 11-27)
 조정 세션은 프로젝트 매니저다. 계산 방법·순서·자원 배분·연구실 봇 조작·세션 운영은 스스로 판단해 진행하고 결과만 짧게 보고한다. 사용자 확인은 master 변경, GTO 결과의 봇 연결, 되돌리기 어려운 삭제처럼 되돌릴 수 없는 일에만 받는다.
 
+## 계산 방식 기준 (하나뿐)
+방법은 `claude/lab_autopilot` 의 judge.py·config.json 과 `tools/gto_fulltree/ft60.py`(섞기 a=0.5, 진동 시 0.25, 균형 패널, 행렬 끝점)로 정해져 있다. 조정 세션은 이것을 실행만 하고 바꾸지 않는다. 바꿀 필요가 있으면 봇 코드에 반영(시험 통과)한 뒤 모두가 같은 코드를 쓴다.
+
 ## 0. 시작 전에 반드시 (중복 계산 금지)
 0. 연구실 PC 는 무인 봇(lab autopilot, 브랜치 claude/lab_autopilot, 상태 claude/lab_status 의 status.md)이 돌린다. 봇과 같은 공용 작업판 `claude/ft_claims` 를 쓴다: 일을 시작하기 전에 `python3 autopilot.py claim <스택> <단계> <board_n|coord_solve|coord_prepare|...> --owner <이름>`(CLAIM_OK 일 때만 시작, 30분마다 다시 claim 으로 갱신, 끝나면 release). ft_worker.sh 는 이것을 자동으로 한다. 보드 번호는 assign.tsv 의 번호를 그대로 쓴다(봇과 같은 번호).
 1. `cat data/ft<STACK>/RUNNING.md` — 지금 누가 무엇을 돌리는지. 여기 있는 일은 다시 돌리지 않는다.

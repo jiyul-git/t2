@@ -36,7 +36,7 @@ PREV=$D/step$K/solve/dump.jsonl.gz
 if [ -f $PREV ] && [ ! -f $D/step$K1/freq_change.txt ]; then
   $PY tools/gto_fulltree/ft_freq_change.py $PREV $W/solve_s$K1/dump.jsonl ${FT_FREQ_REACH:-0.02} > $D/step$K1/freq_change.txt 2>&1 && commit "step$K1 freq change"
 fi
-if [ -f $D/step$K1/freq_change.txt ] && [ "${FT_IGNORE_FREQ:-0}" != 1 ]; then
+if [ -f $D/step$K1/freq_change.txt ] && [ "${FT_FREQ_HOLD:-0}" = 1 ]; then   # 기록만(멈춤 기준은 연구실 봇 judge 하나)
   FM=$(awk '/^FREQ_MAX/{print $2}' $D/step$K1/freq_change.txt)
   python3 -c "import sys; sys.exit(0 if float('$FM') < float('${FT_FREQ_STOP:-0.02}') else 1)" && { echo "STEP_HOLD freq_stable 프리플랍 최대 변화 $FM < ${FT_FREQ_STOP:-0.02} — 차트 단계로"; exit 2; }
 fi
