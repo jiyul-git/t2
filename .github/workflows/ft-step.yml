@@ -1,0 +1,74 @@
+# 한 단계 전체를 GitHub Actions 한 번 실행으로(AI 토큰 0): ft_step.sh(collect k → 표 → 트리 풀이 k+1 → prepare) 후 같은 실행 안에서 보드 묶음을 전부 계산.
+# 사용: 브랜치 claude/gha_step_<이름> 에 gha_step.txt("<STACK> <k> <조정 브랜치>")와 이 파일을 두고 푸시. 결과는 조정 브랜치·보드 브랜치로 푸시된다.
+# 보드 작업이 6시간 안에 못 끝나면 그 작업만 "Re-run failed jobs"(이어서 함). 트리 풀이가 6시간을 넘기면 실패 — 그 스택은 조정 세션이 로컬에서 ft_step.sh 로.
+name: ft-step
+on:
+  push:
+    branches: ['claude/gha_step_*']
+permissions:
+  contents: write
+jobs:
+  step:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    outputs:
+      matrix: ${{ steps.m.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: step
+        run: |
+          read ST K BR < gha_step.txt
+          sudo mkdir -p /home/user && sudo chown "$USER" /home/user
+          git config --global user.name "t2-gha"; git config --global user.email "t2-gha@users.noreply.github.com"
+          pip install -q numpy==2.4.6
+          git fetch -q origin "$BR" && git checkout -q -B "$BR" FETCH_HEAD
+          sh tools/gto_fulltree/ft_coord_setup.sh > /tmp/setup.log 2>&1 || { tail -20 /tmp/setup.log; exit 1; }
+          sh tools/gto_fulltree/ft_board_setup.sh > /tmp/bsetup.log 2>&1 || { tail -20 /tmp/bsetup.log; exit 1; }
+          git show origin/claude/lab_autopilot:tools/gto_fulltree/lab_autopilot/autopilot.py > /dev/null 2>&1 || true
+          FT_STACK=$ST FT_LAUNCH=0 bash tools/gto_fulltree/ft_step.sh $K 2>&1 | tail -5 | tee /tmp/step.out
+          grep -q STEP_READY /tmp/step.out
+          echo "ST=$ST" >> $GITHUB_ENV; echo "K1=$((K+1))" >> $GITHUB_ENV
+      - id: m
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json,os
+          st,k1=os.environ['ST'],os.environ['K1']
+          rows=[l.split() for l in open('data/ft%s/step%s/gha_jobs.txt'%(st,k1)) if l.strip()]
+          print('matrix='+json.dumps({'include':[{'stack':r[0],'base':r[1],'board':r[2],'bundles':' '.join(r[3:])} for r in rows]}))
+          PY
+      - name: logs
+        if: always()
+        run: tail -30 /home/user/gto_ckpt/ft*c/solve*.log 2>/dev/null; tail -5 /home/user/gto_ckpt/ft*c/prep*.log 2>/dev/null; true
+  board:
+    needs: step
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix: ${{ fromJson(needs.step.outputs.matrix) }}
+    name: b${{ matrix.board }} ${{ matrix.bundles }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: worker
+        env:
+          FT_STACK: ${{ matrix.stack }}
+          FT_BASE: ${{ matrix.base }}
+          FT_WORKER_MIN: '330'
+          FT_SESSION: gha-${{ github.run_id }}
+        run: |
+          sudo mkdir -p /home/user && sudo chown "$USER" /home/user
+          git config --global user.name "t2-gha"; git config --global user.email "t2-gha@users.noreply.github.com"
+          git fetch -q origin "$FT_BASE"
+          git show FETCH_HEAD:tools/gto_fulltree/ft_worker.sh > /tmp/ftw.sh
+          export SPOT_PANEL_WORKERS=$(nproc)
+          bash /tmp/ftw.sh ${{ matrix.board }} ${{ matrix.bundles }} | tee /tmp/ftw.out
+          tail -1 /tmp/ftw.out | grep -q WORKER_ALL_DONE
+      - name: logs
+        if: always()
+        run: tail -5 /home/user/gto_ckpt/ft${{ matrix.stack }}_board.log 2>/dev/null; cat /home/user/gto_ckpt/ft_worker.log 2>/dev/null; true
