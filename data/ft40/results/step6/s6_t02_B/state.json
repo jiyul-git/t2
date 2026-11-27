@@ -3,7 +3,8 @@
  "chunks_done": [
   0,
   12,
-  24
+  24,
+  28
  ],
  "boards_done": [
   "6d6s5d",
@@ -25,13 +26,17 @@
   "As9s2s",
   "JcJd4c",
   "Jh5h3h",
+  "Kc8c8h",
   "KdJdTd",
   "Kh6h4h",
   "KhTh8h",
+  "Ks3h3s",
   "Qd9d8d",
   "QhTh6h",
   "QsTs6s",
+  "Tc2h2s",
   "Th9c9h",
+  "Ts5h5s",
   "Ts8s6s",
   "Ts8s7s"
  ]
