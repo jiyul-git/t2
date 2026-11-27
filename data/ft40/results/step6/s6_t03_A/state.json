@@ -4,7 +4,8 @@
   0,
   12,
   24,
-  36
+  36,
+  40
  ],
  "boards_done": [
   "4s3c3d",
@@ -12,9 +13,11 @@
   "7c6c4c",
   "8h8s4h",
   "9c7c4c",
+  "9h5d4c",
   "9h6h6s",
   "9s7h7s",
   "Ac2d2s",
+  "Ac8d5s",
   "AcAd3h",
   "AcAhJd",
   "AcKhJd",
@@ -29,6 +32,7 @@
   "AhQh3h",
   "AhQh6h",
   "As6c2d",
+  "As7h5d",
   "AsKhKs",
   "Jc5c4c",
   "JcJs9h",
@@ -44,6 +48,7 @@
   "Qh9h3h",
   "Qs6s3s",
   "QsJs6s",
+  "Th5s2c",
   "Th9h3h",
   "Th9h4h",
   "Ts4c4s"
