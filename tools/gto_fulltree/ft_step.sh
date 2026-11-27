@@ -4,7 +4,7 @@
 # 순서(마지막에 GitHub Actions 보드 계산 자동 시작): collect k → next_tables k → 트리 풀이 k+1(ft_solve.sh) → 덤프 저장 → prepare k+1(균형 패널, 묶음당 작업 하나)
 #       → used_gross 저장 → gha_jobs.txt(k+1) 작성 → 커밋·푸시. 마지막 줄 STEP_READY <k+1> <묶음수> 또는 STEP_FAIL <이유>.
 # 환경: FT_STACK, FT_WORK(기본 /home/user/gto_ckpt/ft<STACK>c), FT_REPLACE(next_tables 섞지 않기, 기본 0),
-#       FT_BOARD_BASE(보드 번호 시작, 기본 1000*(k+1)), FT_PREP_ENV(prepare 에 더 줄 환경, 예 "FT_MIN_REACH=0.001").
+#       FT_PREP_ENV(prepare 에 더 줄 환경, 예 "FT_MIN_REACH=0.001").
 set -u
 K=$1; K1=$((K+1)); ST=${FT_STACK:-60}; export FT_STACK=$ST
 R=$(git rev-parse --show-toplevel); cd "$R"; BR=$(git rev-parse --abbrev-ref HEAD)
@@ -30,8 +30,9 @@ if [ ! -f $D/step$K1/bundles.tsv ]; then
   commit "step$K1 prepare"
 fi
 # 5) gha_jobs.txt
-NB=$(awk 'NR>1' $D/step$K1/bundles.tsv | wc -l); B0=${FT_BOARD_BASE:-$((1000*K1))}
-awk -v st=$ST -v br=$BR -v b0=$B0 'NR>1{printf "%s %s %d %s\n", st, br, b0+NR-1, $1}' $D/step$K1/bundles.tsv > $D/step$K1/gha_jobs.txt
+NB=$(awk 'NR>1' $D/step$K1/bundles.tsv | wc -l)
+# 보드 번호 = assign.tsv 의 세션 번호(연구실 봇·클라우드 세션과 같은 번호 → claim 이 겹치지 않음). FT_SESSIONS=999 라 번호마다 묶음 하나.
+awk -v st=$ST -v br=$BR 'NR>1{a[$2]=a[$2]" "$1} END{for(n in a) printf "%s %s %d%s\n", st, br, n, a[n]}' $D/step$K1/assign.tsv | sort -k3,3n > $D/step$K1/gha_jobs.txt
 commit "step$K1 gha_jobs"
 # 6) GitHub Actions 로 보드 계산 시작(트리거 브랜치 푸시). FT_LAUNCH=0 이면 건너뜀.
 if [ "${FT_LAUNCH:-1}" = 1 ]; then

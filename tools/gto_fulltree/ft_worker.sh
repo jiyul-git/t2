@@ -42,12 +42,19 @@ launch() {
   log "launch $B"
 }
 done_all && { echo "WORKER_ALL_DONE"; exit 0; }
+# 공용 작업판(claude/ft_claims, 연구실 봇과 같은 규칙): 보드 번호를 잡고 30분마다 갱신. 남이 잡고 있으면 시작하지 않는다.
+K=$(awk -F'\t' -v b="${B%% *}" '$1==b{print $2}' data/ft$ST/step*/bundles.tsv 2>/dev/null | head -1)
+AP=$G/autopilot.py; git show origin/claude/lab_autopilot:tools/gto_fulltree/lab_autopilot/autopilot.py > $AP 2>/dev/null || { git fetch -q origin claude/lab_autopilot && git show FETCH_HEAD:tools/gto_fulltree/lab_autopilot/autopilot.py > $AP; }
+OWNER=${FT_OWNER:-worker-${FT_SESSION:-$(hostname)}}
+claim() { [ -z "$K" ] && return 0; [ "${FT_NO_PUSH:-}" = 1 ] && return 0; python3 $AP claim $ST $K board_$N --owner "$OWNER" > /dev/null 2>&1; }
+claim; rc=$?; [ $rc -eq 3 ] && { echo "WORKER_FAIL claimed by other (ft$ST step$K board_$N)"; exit 1; }
 END=$(( $(date +%s) + MIN*60 )); fails=0; last=$(git rev-parse HEAD)
 pgrep -f ft_board.py > /dev/null || launch
+hb=0
 while [ $(date +%s) -lt $END ]; do
-  sleep 60
+  sleep 60; hb=$((hb+1)); [ $((hb % 30)) -eq 0 ] && claim
   if ! pgrep -f ft_board.py > /dev/null; then
-    done_all && { echo "WORKER_ALL_DONE"; exit 0; }
+    done_all && { [ -n "$K" ] && [ "${FT_NO_PUSH:-}" != 1 ] && python3 $AP release $ST $K board_$N > /dev/null 2>&1; echo "WORKER_ALL_DONE"; exit 0; }
     now=$(git rev-parse HEAD); [ "$now" = "$last" ] && fails=$((fails+1)) || fails=0; last=$now
     [ $fails -ge 5 ] && { echo "WORKER_FAIL died 5x without progress: $(tail -2 $BL | tr '\n' ' ' | cut -c1-150)"; exit 1; }
     launch
