@@ -1,5 +1,5 @@
 # 한 단계 전체를 GitHub Actions 한 번 실행으로(AI 토큰 0): ft_step.sh(collect k → 표 → 트리 풀이 k+1 → prepare) 후 같은 실행 안에서 보드 묶음을 전부 계산.
-# 사용: 브랜치 claude/gha_step_<이름> 에 gha_step.txt("<STACK> <k> <조정 브랜치>")와 이 파일을 두고 푸시. 결과는 조정 브랜치·보드 브랜치로 푸시된다.
+# 사용: 브랜치 claude/gha_step_<이름> 에 gha_step.txt("<STACK> <k> <조정 브랜치> [환경=값 ...]")와 이 파일을 두고 푸시. 결과는 조정 브랜치·보드 브랜치로 푸시된다.
 # 보드 작업이 6시간 안에 못 끝나면 그 작업만 "Re-run failed jobs"(이어서 함). 트리 풀이가 6시간을 넘기면 실패 — 그 스택은 조정 세션이 로컬에서 ft_step.sh 로.
 name: ft-step
 on:
@@ -19,7 +19,8 @@ jobs:
         with: { python-version: '3.11' }
       - name: step
         run: |
-          read ST K BR < gha_step.txt
+          read ST K BR EXTRA < gha_step.txt
+          for kv in $EXTRA; do export "$kv"; done      # 예: FT_PREP_ENV=FT_MIN_REACH=1e-3
           sudo mkdir -p /home/user && sudo chown "$USER" /home/user
           git config --global user.name "t2-gha"; git config --global user.email "t2-gha@users.noreply.github.com"
           pip install -q numpy==2.4.6
