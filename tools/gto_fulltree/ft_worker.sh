@@ -47,6 +47,7 @@ K=$(awk -F'\t' -v b="${B%% *}" '$1==b{print $2}' data/ft$ST/step*/bundles.tsv 2>
 AP=$G/autopilot.py; git show origin/claude/lab_autopilot:tools/gto_fulltree/lab_autopilot/autopilot.py > $AP 2>/dev/null || { git fetch -q origin claude/lab_autopilot && git show FETCH_HEAD:tools/gto_fulltree/lab_autopilot/autopilot.py > $AP; }
 OWNER=${FT_OWNER:-worker-${FT_SESSION:-$(hostname)}}
 claim() { [ -z "$K" ] && return 0; [ "${FT_NO_PUSH:-}" = 1 ] && return 0; python3 $AP claim $ST $K board_$N --owner "$OWNER" > /dev/null 2>&1; }
+FT_OWNER="$OWNER" bash tools/gto_fulltree/ft_preflight.sh $ST "${K:-0}" board_$N --long > /tmp/ftw_pf.txt 2>&1 || { echo "WORKER_FAIL $(tail -1 /tmp/ftw_pf.txt)"; exit 1; }
 claim; rc=$?; [ $rc -eq 3 ] && { echo "WORKER_FAIL claimed by other (ft$ST step$K board_$N)"; exit 1; }
 END=$(( $(date +%s) + MIN*60 )); fails=0; last=$(git rev-parse HEAD)
 pgrep -f ft_board.py > /dev/null || launch

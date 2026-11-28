@@ -7,6 +7,7 @@
 방법은 `claude/lab_autopilot` 의 judge.py·config.json 과 `tools/gto_fulltree/ft60.py`(섞기 a=0.5, 진동 시 0.25, 균형 패널, 행렬 끝점)로 정해져 있다. 조정 세션은 이것을 실행만 하고 바꾸지 않는다. 바꿀 필요가 있으면 봇 코드에 반영(시험 통과)한 뒤 모두가 같은 코드를 쓴다.
 
 ## 0. 시작 전에 반드시 (중복 계산 금지)
+**강제 점검:** ft_step.sh·ft_worker.sh 는 시작할 때 `ft_preflight.sh` 를 스스로 돌려, 다른 쪽 claim·연구실 봇 작업과 겹치거나 클라우드 세션 컨테이너에서 긴 계산을 시작하면 거부한다. 다른 길로 시작하는 계산도 먼저 `bash tools/gto_fulltree/ft_preflight.sh <스택> <단계> <단위> [--long]` 을 통과해야 한다.
 0. 연구실 PC 는 무인 봇(lab autopilot, 브랜치 claude/lab_autopilot, 상태 claude/lab_status 의 status.md)이 돌린다. 봇과 같은 공용 작업판 `claude/ft_claims` 를 쓴다: 일을 시작하기 전에 `python3 autopilot.py claim <스택> <단계> <board_n|coord_solve|coord_prepare|...> --owner <이름>`(CLAIM_OK 일 때만 시작, 30분마다 다시 claim 으로 갱신, 끝나면 release). ft_worker.sh 는 이것을 자동으로 한다. 보드 번호는 assign.tsv 의 번호를 그대로 쓴다(봇과 같은 번호).
 1. `cat data/ft<STACK>/RUNNING.md` — 지금 누가 무엇을 돌리는지. 여기 있는 일은 다시 돌리지 않는다.
 2. `bash tools/gto_fulltree/ft_status.sh <단계>` (FT_STACK=60|100) — 모든 계정의 보드 브랜치를 보고 남은 묶음만 출력. `@`는 최근 3시간 안에 진행 중.
@@ -30,6 +31,7 @@
 - 동시 세션은 약 50개가 한계로 보임. 주간 사용 한도에 걸리면 세션이 멈춘다(11-18 실제 발생).
 
 ## 3. GitHub Actions (토큰 0) — 우선 사용
+- **한 단계 전체 = 푸시 한 번:** 브랜치 claude/gha_step_<이름> 에 gha_step.txt("<STACK> <k> <조정 브랜치>")와 .github/workflows/ft-step.yml 을 두고 푸시 → collect k → 표 → 트리 풀이 → prepare → 보드 전부를 한 실행에서. 보드가 다 모였을 때(ft_status.sh 로 확인) 한 번 푸시하면 된다. 100bb 트리처럼 6시간을 넘기는 풀이는 로컬 ft_step.sh.
 - 워크플로: `.github/workflows/ft-board.yml` (이 브랜치). 트리거 브랜치에 묶음 목록을 푸시하면 묶음마다 작업 하나가 돈다. 작업은 ft_worker.sh 를 최대 5시간 40분 돌리고, 못 끝난 묶음은 다시 트리거하면 이어서 한다.
 - 공개 저장소라 실행 시간 무료·무제한(4코어, 작업당 6시간, 동시 20개). 실측(11-27): 빌드 2분, 행렬 끝점 1보드 약 3분 → 72보드 묶음 하나가 약 3.7시간, 작업 하나에 묶음 하나.
 - 시험: 트리거 브랜치에 gha_test_boards(숫자)를 두면 앞 N 보드만, 결과는 올리지 않음. 예: claude/gha_ft_test1.
