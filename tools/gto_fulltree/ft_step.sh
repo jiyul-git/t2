@@ -10,6 +10,7 @@ K=$1; K1=$((K+1)); ST=${FT_STACK:-60}; export FT_STACK=$ST
 R=$(git rev-parse --show-toplevel); cd "$R"; BR=$(git rev-parse --abbrev-ref HEAD)
 W=${FT_WORK:-/home/user/gto_ckpt/ft${ST}c}; export FT_WORK=$W; D=data/ft$ST
 PY=python3; fail() { echo "STEP_FAIL $*"; exit 1; }
+bash tools/gto_fulltree/ft_preflight.sh $ST $K1 coord_solve --long || fail "preflight"
 commit() { git add -A "$D" && { git diff --cached --quiet || git commit -q -m "ft$ST $1"; } && git push -q origin HEAD:"$BR" || fail "push $1"; }
 # 1) collect k
 if [ ! -f $D/step$K/collect/report.json ] || ! grep -q '"complete": true' $D/step$K/collect/report.json; then
