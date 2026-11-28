@@ -31,6 +31,14 @@ jobs:
           FT_STACK=$ST FT_LAUNCH=0 bash tools/gto_fulltree/ft_step.sh $K 2>&1 | tail -5 | tee /tmp/step.out
           grep -q STEP_READY /tmp/step.out
           echo "ST=$ST" >> $GITHUB_ENV; echo "K1=$((K+1))" >> $GITHUB_ENV
+      - name: save tree checkpoint (다음 단계 이어 풀기 시험용, 30일)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ck-ft${{ env.ST }}-s${{ env.K1 }}
+          path: /home/user/gto_ckpt/ft${{ env.ST }}c/solve_s${{ env.K1 }}/ck.gtop
+          retention-days: 30
+          compression-level: 1
+          if-no-files-found: ignore
       - id: m
         run: |
           python3 - <<'PY' >> "$GITHUB_OUTPUT"
