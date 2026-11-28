@@ -1,15 +1,15 @@
 {
  "schema": "lab_status_v1",
  "status": "warn",
- "time": "2026-11-28T11:25:22Z",
+ "time": "2026-11-28T11:30:41Z",
  "host": "DESKTOP-FUUG7O5",
  "owner": "t2-lab",
- "uptime_h": 0.0,
+ "uptime_h": 0.1,
  "mode": "live",
  "code_release": "0abdd43f33",
  "code_sha": "0abdd43f3",
  "update": {
-  "pending": "46bf54941c",
+  "pending": null,
   "failed": null
  },
  "cpu": {
@@ -22,13 +22,708 @@
   ]
  },
  "mem_avail_gb": null,
- "disk_free_gb": 83.6,
+ "disk_free_gb": 86.1,
  "paused": {
   "all": false,
   "stacks": []
  },
  "jobs": [],
- "stacks": {},
+ "stacks": {
+  "30": {
+   "phase": "boards",
+   "why": "보드 번호 4/20 끝",
+   "step": 2,
+   "coord_tip_age_h": 303.4,
+   "stall_streak": 0,
+   "boards": {
+    "1": {
+     "done": true,
+     "bundles": {
+      "s2_t00_A": "done",
+      "s2_t10_A": "done",
+      "s2_t20_A": "done"
+     },
+     "tip_age_h": 30.6,
+     "claim": null
+    },
+    "2": {
+     "done": true,
+     "bundles": {
+      "s2_t00_B": "done",
+      "s2_t10_B": "done",
+      "s2_t20_B": "done"
+     },
+     "tip_age_h": 30.7,
+     "claim": null
+    },
+    "3": {
+     "done": true,
+     "bundles": {
+      "s2_t01_A": "done",
+      "s2_t11_A": "done",
+      "s2_t21_A": "done"
+     },
+     "tip_age_h": 17.1,
+     "claim": null
+    },
+    "4": {
+     "done": true,
+     "bundles": {
+      "s2_t01_B": "done",
+      "s2_t11_B": "done",
+      "s2_t21_B": "done"
+     },
+     "tip_age_h": 17.1,
+     "claim": null
+    },
+    "5": {
+     "done": false,
+     "bundles": {
+      "s2_t02_A": "none",
+      "s2_t12_A": "none",
+      "s2_t22_A": "none"
+     },
+     "tip_age_h": 467.2,
+     "claim": null
+    },
+    "6": {
+     "done": false,
+     "bundles": {
+      "s2_t02_B": "none",
+      "s2_t12_B": "none",
+      "s2_t22_B": "none"
+     },
+     "tip_age_h": 386.9,
+     "claim": null
+    },
+    "7": {
+     "done": false,
+     "bundles": {
+      "s2_t03_A": "none",
+      "s2_t13_A": "none",
+      "s2_t23_A": "none"
+     },
+     "tip_age_h": 385.8,
+     "claim": null
+    },
+    "8": {
+     "done": false,
+     "bundles": {
+      "s2_t03_B": "none",
+      "s2_t13_B": "none",
+      "s2_t23_B": "none"
+     },
+     "tip_age_h": 381.1,
+     "claim": null
+    },
+    "9": {
+     "done": false,
+     "bundles": {
+      "s2_t04_A": "none",
+      "s2_t14_A": "none"
+     },
+     "tip_age_h": 379.4,
+     "claim": null
+    },
+    "10": {
+     "done": false,
+     "bundles": {
+      "s2_t04_B": "none",
+      "s2_t14_B": "none"
+     },
+     "tip_age_h": 375.4,
+     "claim": null
+    },
+    "11": {
+     "done": false,
+     "bundles": {
+      "s2_t05_A": "none",
+      "s2_t15_A": "none"
+     },
+     "tip_age_h": 367.8,
+     "claim": null
+    },
+    "12": {
+     "done": false,
+     "bundles": {
+      "s2_t05_B": "none",
+      "s2_t15_B": "none"
+     },
+     "tip_age_h": 364.8,
+     "claim": null
+    },
+    "13": {
+     "done": false,
+     "bundles": {
+      "s2_t06_A": "none",
+      "s2_t16_A": "none"
+     },
+     "tip_age_h": 359.0,
+     "claim": null
+    },
+    "14": {
+     "done": false,
+     "bundles": {
+      "s2_t06_B": "none",
+      "s2_t16_B": "none"
+     },
+     "tip_age_h": 355.9,
+     "claim": null
+    },
+    "15": {
+     "done": false,
+     "bundles": {
+      "s2_t07_A": "none",
+      "s2_t17_A": "none"
+     },
+     "tip_age_h": 350.9,
+     "claim": null
+    },
+    "16": {
+     "done": false,
+     "bundles": {
+      "s2_t07_B": "none",
+      "s2_t17_B": "none"
+     },
+     "tip_age_h": 316.6,
+     "claim": null
+    },
+    "17": {
+     "done": false,
+     "bundles": {
+      "s2_t08_A": "none",
+      "s2_t18_A": "none"
+     },
+     "tip_age_h": 310.7,
+     "claim": null
+    },
+    "18": {
+     "done": false,
+     "bundles": {
+      "s2_t08_B": "none",
+      "s2_t18_B": "none"
+     },
+     "tip_age_h": 307.5,
+     "claim": null
+    },
+    "19": {
+     "done": false,
+     "bundles": {
+      "s2_t09_A": "none",
+      "s2_t19_A": "none"
+     },
+     "tip_age_h": 303.6,
+     "claim": null
+    },
+    "20": {
+     "done": false,
+     "bundles": {
+      "s2_t09_B": "none",
+      "s2_t19_B": "none"
+     },
+     "tip_age_h": 466.5,
+     "claim": null
+    }
+   }
+  },
+  "40": {
+   "phase": "boards",
+   "why": "보드 번호 0/20 끝",
+   "step": 6,
+   "coord_tip_age_h": 30.1,
+   "stall_streak": 0,
+   "boards": {
+    "1": {
+     "done": false,
+     "bundles": {
+      "s6_t00_A": "partial",
+      "s6_t10_A": "partial",
+      "s6_t20_A": "partial",
+      "s6_t30_A": "partial"
+     },
+     "tip_age_h": 30.1,
+     "claim": null
+    },
+    "2": {
+     "done": false,
+     "bundles": {
+      "s6_t00_B": "partial",
+      "s6_t10_B": "partial",
+      "s6_t20_B": "partial",
+      "s6_t30_B": "none"
+     },
+     "tip_age_h": 30.1,
+     "claim": null
+    },
+    "3": {
+     "done": false,
+     "bundles": {
+      "s6_t01_A": "partial",
+      "s6_t11_A": "partial",
+      "s6_t21_A": "partial",
+      "s6_t31_A": "none"
+     },
+     "tip_age_h": 30.1,
+     "claim": null
+    },
+    "4": {
+     "done": false,
+     "bundles": {
+      "s6_t01_B": "partial",
+      "s6_t11_B": "partial",
+      "s6_t21_B": "partial",
+      "s6_t31_B": "partial"
+     },
+     "tip_age_h": 30.1,
+     "claim": null
+    },
+    "5": {
+     "done": false,
+     "bundles": {
+      "s6_t02_A": "partial",
+      "s6_t12_A": "partial",
+      "s6_t22_A": "partial",
+      "s6_t32_A": "partial"
+     },
+     "tip_age_h": 19.8,
+     "claim": null
+    },
+    "6": {
+     "done": false,
+     "bundles": {
+      "s6_t02_B": "partial",
+      "s6_t12_B": "partial",
+      "s6_t22_B": "partial",
+      "s6_t32_B": "partial"
+     },
+     "tip_age_h": 30.1,
+     "claim": null
+    },
+    "7": {
+     "done": false,
+     "bundles": {
+      "s6_t03_A": "partial",
+      "s6_t13_A": "partial",
+      "s6_t23_A": "none",
+      "s6_t33_A": "partial"
+     },
+     "tip_age_h": 29.8,
+     "claim": null
+    },
+    "8": {
+     "done": false,
+     "bundles": {
+      "s6_t03_B": "partial",
+      "s6_t13_B": "none",
+      "s6_t23_B": "partial",
+      "s6_t33_B": "none"
+     },
+     "tip_age_h": 30.1,
+     "claim": null
+    },
+    "9": {
+     "done": false,
+     "bundles": {
+      "s6_t04_A": "partial",
+      "s6_t14_A": "none",
+      "s6_t24_A": "partial",
+      "s6_t34_A": "none"
+     },
+     "tip_age_h": 30.1,
+     "claim": null
+    },
+    "10": {
+     "done": false,
+     "bundles": {
+      "s6_t04_B": "partial",
+      "s6_t14_B": "none",
+      "s6_t24_B": "none",
+      "s6_t34_B": "none"
+     },
+     "tip_age_h": 40.4,
+     "claim": null
+    },
+    "11": {
+     "done": false,
+     "bundles": {
+      "s6_t05_A": "partial",
+      "s6_t15_A": "none",
+      "s6_t25_A": "none"
+     },
+     "tip_age_h": 38.9,
+     "claim": null
+    },
+    "12": {
+     "done": false,
+     "bundles": {
+      "s6_t05_B": "partial",
+      "s6_t15_B": "none",
+      "s6_t25_B": "none"
+     },
+     "tip_age_h": 38.9,
+     "claim": null
+    },
+    "13": {
+     "done": false,
+     "bundles": {
+      "s6_t06_A": "partial",
+      "s6_t16_A": "none",
+      "s6_t26_A": "none"
+     },
+     "tip_age_h": 34.4,
+     "claim": null
+    },
+    "14": {
+     "done": false,
+     "bundles": {
+      "s6_t06_B": "partial",
+      "s6_t16_B": "none",
+      "s6_t26_B": "none"
+     },
+     "tip_age_h": 20.2,
+     "claim": null
+    },
+    "15": {
+     "done": false,
+     "bundles": {
+      "s6_t07_A": "partial",
+      "s6_t17_A": "none",
+      "s6_t27_A": "none"
+     },
+     "tip_age_h": 38.4,
+     "claim": null
+    },
+    "16": {
+     "done": false,
+     "bundles": {
+      "s6_t07_B": "partial",
+      "s6_t17_B": "none",
+      "s6_t27_B": "none"
+     },
+     "tip_age_h": 38.2,
+     "claim": null
+    },
+    "17": {
+     "done": false,
+     "bundles": {
+      "s6_t08_A": "partial",
+      "s6_t18_A": "none",
+      "s6_t28_A": "none"
+     },
+     "tip_age_h": 41.3,
+     "claim": null
+    },
+    "18": {
+     "done": false,
+     "bundles": {
+      "s6_t08_B": "partial",
+      "s6_t18_B": "none",
+      "s6_t28_B": "none"
+     },
+     "tip_age_h": 38.4,
+     "claim": null
+    },
+    "19": {
+     "done": false,
+     "bundles": {
+      "s6_t09_A": "partial",
+      "s6_t19_A": "none",
+      "s6_t29_A": "none"
+     },
+     "tip_age_h": 38.7,
+     "claim": null
+    },
+    "20": {
+     "done": false,
+     "bundles": {
+      "s6_t09_B": "partial",
+      "s6_t19_B": "none",
+      "s6_t29_B": "none"
+     },
+     "tip_age_h": 38.9,
+     "claim": null
+    }
+   }
+  },
+  "60": {
+   "phase": "collect",
+   "why": "묶음 전부 끝 → collect",
+   "step": 4,
+   "coord_tip_age_h": 307.9,
+   "stall_streak": 0,
+   "boards": {
+    "1": {
+     "done": true,
+     "bundles": {
+      "s4_t03_A": "done",
+      "s4_t19_A": "done",
+      "s4_t29_A": "done",
+      "s4_t39_A": "done"
+     },
+     "tip_age_h": 315.1,
+     "claim": null
+    },
+    "2": {
+     "done": true,
+     "bundles": {
+      "s4_t03_B": "done",
+      "s4_t19_B": "done",
+      "s4_t29_B": "done",
+      "s4_t39_B": "done"
+     },
+     "tip_age_h": 302.3,
+     "claim": null
+    },
+    "3": {
+     "done": true,
+     "bundles": {
+      "s4_t04_A": "done",
+      "s4_t18_A": "done",
+      "s4_t28_A": "done",
+      "s4_t38_A": "done"
+     },
+     "tip_age_h": 318.6,
+     "claim": null
+    },
+    "4": {
+     "done": true,
+     "bundles": {
+      "s4_t04_B": "done",
+      "s4_t18_B": "done",
+      "s4_t28_B": "done",
+      "s4_t38_B": "done"
+     },
+     "tip_age_h": 316.3,
+     "claim": null
+    },
+    "5": {
+     "done": true,
+     "bundles": {
+      "s4_t00_A": "done",
+      "s4_t17_A": "done",
+      "s4_t27_A": "done",
+      "s4_t37_A": "done"
+     },
+     "tip_age_h": 314.0,
+     "claim": null
+    },
+    "6": {
+     "done": true,
+     "bundles": {
+      "s4_t00_B": "done",
+      "s4_t17_B": "done",
+      "s4_t27_B": "done",
+      "s4_t37_B": "done"
+     },
+     "tip_age_h": 319.2,
+     "claim": null
+    },
+    "7": {
+     "done": true,
+     "bundles": {
+      "s4_t01_A": "done",
+      "s4_t10_A": "done",
+      "s4_t20_A": "done",
+      "s4_t30_A": "done"
+     },
+     "tip_age_h": 312.6,
+     "claim": null
+    },
+    "8": {
+     "done": true,
+     "bundles": {
+      "s4_t01_B": "done",
+      "s4_t10_B": "done",
+      "s4_t20_B": "done",
+      "s4_t30_B": "done"
+     },
+     "tip_age_h": 305.1,
+     "claim": null
+    },
+    "9": {
+     "done": true,
+     "bundles": {
+      "s4_t02_A": "done",
+      "s4_t11_A": "done",
+      "s4_t21_A": "done",
+      "s4_t31_A": "done"
+     },
+     "tip_age_h": 313.6,
+     "claim": null
+    },
+    "10": {
+     "done": true,
+     "bundles": {
+      "s4_t02_B": "done",
+      "s4_t11_B": "done",
+      "s4_t21_B": "done",
+      "s4_t31_B": "done"
+     },
+     "tip_age_h": 312.6,
+     "claim": null
+    },
+    "11": {
+     "done": true,
+     "bundles": {
+      "s4_t05_A": "done",
+      "s4_t12_A": "done"
+     },
+     "tip_age_h": 318.5,
+     "claim": null
+    },
+    "12": {
+     "done": true,
+     "bundles": {
+      "s4_t05_B": "done",
+      "s4_t12_B": "done",
+      "s4_t22_B": "done",
+      "s4_t32_B": "done"
+     },
+     "tip_age_h": 315.3,
+     "claim": null
+    },
+    "13": {
+     "done": true,
+     "bundles": {
+      "s4_t06_A": "done",
+      "s4_t13_A": "done",
+      "s4_t23_A": "done",
+      "s4_t33_A": "done"
+     },
+     "tip_age_h": 301.8,
+     "claim": null
+    },
+    "14": {
+     "done": true,
+     "bundles": {
+      "s4_t06_B": "done",
+      "s4_t13_B": "done",
+      "s4_t23_B": "done",
+      "s4_t33_B": "done"
+     },
+     "tip_age_h": 313.3,
+     "claim": null
+    },
+    "15": {
+     "done": true,
+     "bundles": {
+      "s4_t07_A": "done",
+      "s4_t14_A": "done",
+      "s4_t24_A": "done",
+      "s4_t34_A": "done"
+     },
+     "tip_age_h": 312.5,
+     "claim": null
+    },
+    "16": {
+     "done": true,
+     "bundles": {
+      "s4_t07_B": "done",
+      "s4_t14_B": "done"
+     },
+     "tip_age_h": 319.0,
+     "claim": null
+    },
+    "17": {
+     "done": true,
+     "bundles": {
+      "s4_t08_A": "done",
+      "s4_t15_A": "done"
+     },
+     "tip_age_h": 318.1,
+     "claim": null
+    },
+    "18": {
+     "done": true,
+     "bundles": {
+      "s4_t08_B": "done",
+      "s4_t15_B": "done"
+     },
+     "tip_age_h": 319.2,
+     "claim": null
+    },
+    "19": {
+     "done": true,
+     "bundles": {
+      "s4_t09_A": "done",
+      "s4_t16_A": "done"
+     },
+     "tip_age_h": 323.1,
+     "claim": null
+    },
+    "20": {
+     "done": true,
+     "bundles": {
+      "s4_t09_B": "done",
+      "s4_t16_B": "done"
+     },
+     "tip_age_h": 315.1,
+     "claim": null
+    },
+    "21": {
+     "done": true,
+     "bundles": {
+      "s4_t22_A": "done",
+      "s4_t32_A": "done"
+     },
+     "tip_age_h": 321.0,
+     "claim": null
+    },
+    "22": {
+     "done": true,
+     "bundles": {
+      "s4_t24_B": "done",
+      "s4_t34_B": "done"
+     },
+     "tip_age_h": 320.5,
+     "claim": null
+    },
+    "23": {
+     "done": true,
+     "bundles": {
+      "s4_t25_A": "done",
+      "s4_t35_A": "done"
+     },
+     "tip_age_h": 319.2,
+     "claim": null
+    },
+    "24": {
+     "done": true,
+     "bundles": {
+      "s4_t25_B": "done",
+      "s4_t35_B": "done"
+     },
+     "tip_age_h": 315.8,
+     "claim": null
+    },
+    "25": {
+     "done": true,
+     "bundles": {
+      "s4_t26_A": "done",
+      "s4_t36_A": "done"
+     },
+     "tip_age_h": 313.2,
+     "claim": null
+    },
+    "26": {
+     "done": true,
+     "bundles": {
+      "s4_t26_B": "done",
+      "s4_t36_B": "done"
+     },
+     "tip_age_h": 30.2,
+     "claim": null
+    }
+   }
+  },
+  "100": {
+   "phase": "solve",
+   "why": "단계 2 표는 있음, 트리 풀이 없음",
+   "step": 2,
+   "coord_tip_age_h": 3.7,
+   "stall_streak": 0
+  }
+ },
  "alerts": [
   {
    "code": "bot_restarted",
@@ -140,7 +835,8 @@
     "11-28 16:34:15 원격 명령 c11 resume → OK 다시 시작",
     "11-28 16:34:15 특별 작업 시작: {'id': '3way_9c8d2c', 'kind': '3way_full', 'board': '9c8d2c', 'iters': 300}",
     "11-28 16:44:38 새 봇 코드 46bf54941c 자체 점검 통과 — 진행 중인 묶음이 끝나는 대로 교체",
-    "11-28 20:25:22 lab autopilot 시작 (live) 코어 6, 보드 2×워커 3, nice 19, 코드 0abdd43f33"
+    "11-28 20:25:22 lab autopilot 시작 (live) 코어 6, 보드 2×워커 3, nice 19, 코드 0abdd43f33",
+    "11-28 20:30:41 봇을 다시 시작합니다(새 코드 46bf54941c)"
    ]
   }
  ],

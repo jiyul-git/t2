@@ -1,8 +1,12 @@
-# 연구실 봇 상태: **warn** — 2026-11-28T11:25:22Z (live)
+# 연구실 봇 상태: **warn** — 2026-11-28T11:30:41Z (live)
 
-- 호스트 DESKTOP-FUUG7O5, 가동 0.0시간, 코드 0abdd43f33, CPU 0/6 코어, 메모리 여유 None GB, 디스크 여유 83.6 GB
+- 호스트 DESKTOP-FUUG7O5, 가동 0.1시간, 코드 0abdd43f33, CPU 0/6 코어, 메모리 여유 None GB, 디스크 여유 86.1 GB
 - 특별 작업 대기열(먼저 함): 3way_9c8d2c, 3way_AcKhJd, 3way_7c6c4c
 - 지금 하는 일: 없음 (대기)
+- **30bb** 단계 2: boards — 보드 번호 4/20 끝
+- **40bb** 단계 6: boards — 보드 번호 0/20 끝
+- **60bb** 단계 4: collect — 묶음 전부 끝 → collect
+- **100bb** 단계 2: solve — 단계 2 표는 있음, 트리 풀이 없음
 
 ## 경고 (status != ok)
 - [warn] bot_restarted bot: 봇이 비정상 종료 후 다시 시작됨(이전 실행이 끝났다는 기록 없음) — 로그 확인 (x1, 처음 2026-11-28T11:25:22Z)
