@@ -1,0 +1,1 @@
+100 1 claude/ft100_coord FT_PREP_ENV=FT_MIN_REACH=1e-3
