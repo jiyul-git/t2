@@ -605,6 +605,37 @@ def board_free(hub, cfg, sv, n, claims, local_branches):
     return True, ('이어서(내 것)' if mine else ('인계(남의 것 %.0f시간 멈춤)' % tip if started_other else '새로'))
 
 
+# ----------------------------------------------------------------------------- 감시·재가동(GitHub Actions 로 도는 스택)
+def supervise_plan(S, sv, busy, claims, active_h):
+    """GHA 로 도는 스택 하나의 다음 행동. 순수 함수.
+    반환: ('busy', 이유) | ('hold', 이유) | ('step', ft_step 인자 k) | ('boards', [(보드번호, [묶음..])]) | ('wait', 이유)"""
+    if busy:
+        return ('busy', 'GitHub Actions 실행 중: ' + ', '.join(busy)[:120])
+    ph, K = sv.phase, sv.K
+    if ph == 'halted':
+        return ('hold', sv.why)
+    if ph in ('none', 'no_coord', 'error'):
+        return ('wait', sv.why)
+    if ph in ('collect', 'next_tables'):
+        return ('step', K)
+    if ph in ('solve', 'prepare'):
+        return ('step', K - 1)
+    if ph == 'boards':
+        jobs = []
+        for n, b in sorted(sv.boards.items()):
+            left = [x for x, st in b['bundles'].items() if st != 'done']
+            if not left:
+                continue
+            c = claims.get((S, K, 'board_%d' % n))
+            if c and age_h(c.get('t_heartbeat', c.get('t_claim'))) < 3:
+                continue                       # 누가(연구실 봇·GHA 작업자·세션) 잡고 있음
+            if any(a is not None and a < active_h for x in left for _, a in b['holders'].get(x, [])):
+                continue                       # 최근 푸시가 있는 묶음 = 진행 중
+            jobs.append((n, left))
+        return ('boards', jobs) if jobs else ('wait', '남은 묶음은 모두 진행 중')
+    return ('wait', '%s: %s' % (ph, sv.why))
+
+
 # ----------------------------------------------------------------------------- 실행 환경
 class Env:
     def __init__(self, cfg):
@@ -733,7 +764,7 @@ class Autopilot:
         self.state['ctl'].setdefault('special', [])       # 특별 작업 대기열(원격 명령 enqueue): 스택 일보다 먼저, 컴퓨터를 혼자 쓰며 차례로
         self.state.setdefault('special_done', [])
         self.view, self.claims = {}, {}
-        self.t_refresh = self.t_status = self.t_hb = self.t_control = self.t_watch = self.t_update = 0
+        self.t_refresh = self.t_status = self.t_hb = self.t_control = self.t_watch = self.t_update = self.t_super = 0
         self.errors = []
         self.alerts = {}
         self.pushed_sig, self.t_pushed, self.push_fail = None, 0, 0
@@ -1414,6 +1445,81 @@ class Autopilot:
             log.info('주의: 이 도구 버전은 static_nodes.json 을 읽지 않음(NC-3) — 코디네이터 확인 필요')
         paths += ['data/ft%s/step%d/tables' % (S, k + 1), 'data/ft%s/history.json' % S]
 
+    # --- 감시·재가동: GitHub Actions 로 도는 스택(config supervise.stacks)이 멈추면 다시 띄운다. 30분마다.
+    def gha_busy(self, S):
+        import urllib.request
+        url = 'https://api.github.com/repos/%s/actions/runs?per_page=60' % self.cfg['supervise']['repo']
+        with urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': 'lab-autopilot'}), timeout=30) as r:
+            runs = json.load(r)['workflow_runs']
+        pre = ('claude/gha_step_%s_' % S, 'claude/gha_ft_%s_' % S)
+        return ['%s(%s)' % (x['head_branch'], x['status']) for x in runs if x['head_branch'].startswith(pre) and x['status'] != 'completed']
+
+    def gha_launch(self, S, cb, kind, k, jobs=None, extra=''):
+        """작은 고아 브랜치(워크플로 파일 + 작업 목록)를 푸시해 GitHub Actions 를 시작. 조정 브랜치의 최신 워크플로를 쓴다."""
+        wf = 'ft-step.yml' if kind == 'step' else 'ft-board.yml'
+        y = self.hub.show(cb, '.github/workflows/' + wf)
+        if not y:
+            raise RuntimeError('%s 에 %s 없음' % (cb, wf))
+        stamp = dt.datetime.now(dt.timezone.utc).strftime('%m%d%H%M')
+        br = ('claude/gha_step_%s_s%d_%s' if kind == 'step' else 'claude/gha_ft_%s_s%d_%s') % (S, k + 1 if kind == 'step' else k, stamp)
+
+        def fn(wt):
+            os.makedirs(os.path.join(wt, '.github/workflows'), exist_ok=True)
+            open(os.path.join(wt, '.github/workflows', wf), 'wb').write(y)
+            if kind == 'step':
+                open(os.path.join(wt, 'gha_step.txt'), 'w').write(('%s %d %s %s' % (S, k, cb, extra)).strip() + '\n')
+            else:
+                open(os.path.join(wt, 'gha_jobs.txt'), 'w').write(''.join('%s %s %d %s\n' % (S, cb, n, ' '.join(b)) for n, b in jobs))
+            return True
+        name = 'gha_wt_%s_%s' % (S, stamp)
+        ok = self.hub.mutate(br, name, fn, 'supervisor: %s ft%s k=%d' % (kind, S, k))
+        shutil.rmtree(os.path.join(self.root, name), ignore_errors=True)
+        self.hub.cr.run('worktree', 'prune')
+        return br if ok else None
+
+    def supervise(self):
+        sp = self.cfg.get('supervise') or {}
+        if not sp.get('enabled') or time.time() - self.t_super < sp.get('interval_min', 30) * 60:
+            return
+        self.t_super = time.time()
+        st = self.state.setdefault('supervise', {})
+        for S, x in sp.get('stacks', {}).items():
+            cb = x['coord_branch']
+            try:
+                self.hub.heads.update(self.hub.remote_heads(['refs/heads/' + cb, 'refs/heads/claude/ft%s_board_*' % S]))
+                sc = dict(self.cfg['stacks'][S], coord_branch=cb)
+                sv = read_stack(self.hub, S, sc, self.claims)
+                act = supervise_plan(S, sv, self.gha_busy(S), self.claims, self.cfg['loop']['active_hours'])
+            except Exception as e:      # noqa
+                log.info('감시 %s 읽기 실패: %s', S, str(e)[-150:])
+                continue
+            rec = st.setdefault(S, {'launches': [], 'last': None, 'phase': None})
+            rec['phase'] = '%s %s' % (sv.phase, sv.why)
+            rec['action'] = act[0]
+            if act[0] == 'hold':
+                self.alert('supervise_hold', S, 'warn', '%sbb 자동 진행 멈춤(판정): %s — 조정 세션 판단 필요' % (S, act[1]), ttl_h=12)
+                continue
+            self.clear('supervise_hold', S)
+            if act[0] not in ('step', 'boards'):
+                continue
+            key = '%s:%s' % (act[0], act[1] if act[0] == 'step' else sv.K)
+            recent = [t for k_, t in rec['launches'] if k_ == key and time.time() - t < 24 * 3600]
+            if len(recent) >= sp.get('max_launch_per_day', 3):
+                self.alert('supervise_limit', (S, key), 'error', '%sbb %s 을 24시간에 %d번 다시 띄웠는데도 안 끝남 — 원인 확인 필요(GitHub Actions 로그)' % (S, key, len(recent)), ttl_h=24)
+                continue
+            if self.dry or self.no_push:
+                log.info('(시험) 감시: %s %s', S, act)
+                rec['planned'] = str(act)[:300]
+                continue
+            br = self.gha_launch(S, cb, act[0], act[1] if act[0] == 'step' else sv.K, jobs=act[1] if act[0] == 'boards' else None, extra=x.get('extra', ''))
+            if br:
+                rec['launches'] = [(k_, t) for k_, t in rec['launches'] if time.time() - t < 48 * 3600] + [(key, time.time())]
+                rec['last'] = '%s %s' % (iso(), br)
+                log.info('감시: %sbb %s → GitHub Actions 시작 %s', S, key, br)
+            else:
+                self.alert('supervise_push', (S, key), 'warn', '%sbb %s 시작 푸시 실패' % (S, key), ttl_h=6)
+        self._save_state()
+
     # --- 정리·자체 갱신·상태
     def cleanup(self, aggressive=False):
         keep = self.cfg['disk']['keep_collect_steps']
@@ -1719,6 +1825,7 @@ class Autopilot:
              'stacks': {}, 'alerts': al, 'recent_errors': self.errors[-10:],
              'control': {'applied': dict(list(self.state['ctl']['applied'].items())[-15:]), 'skip': self.state['ctl']['skip'], 'priority': self.state['ctl']['priority'],
                          'cfg_overrides': self.state['ctl']['cfg'], 'stack_overrides': self.state['ctl']['stack']},
+             'supervise': self.state.get('supervise', {}),
              'special': {'queue': [x['id'] for x in self.special_pending()], 'done': self.state.get('special_done', [])[-10:]},
              'blocked': {k: iso(dt.datetime.fromtimestamp(t, dt.timezone.utc)) for k, t in self.state['blocked'].items() if t > time.time()}}
         for S, sv in self.view.items():
@@ -1737,6 +1844,8 @@ class Autopilot:
     def md_status(self, d):
         l = ['# 연구실 봇 상태: **%s** — %s (%s)' % (d['status'], d['time'], d['mode']), '', '- 호스트 %s, 가동 %.1f시간, 코드 %s, CPU %s/%s 코어, 메모리 여유 %s GB, 디스크 여유 %s GB' % (
             d['host'], d['uptime_h'], d['code_release'] or d['code_sha'], d['cpu']['in_use'], d['cpu']['budget'], d['mem_avail_gb'], d['disk_free_gb'])]
+        for S_, r_ in (d.get('supervise') or {}).items():
+            l += ['- 감시 %sbb: %s → %s (마지막 시작: %s)' % (S_, r_.get('phase'), r_.get('action'), r_.get('last'))]
         if d.get('special', {}).get('queue'):
             l += ['- 특별 작업 대기열(먼저 함): ' + ', '.join(d['special']['queue'])]
         l += ['- 지금 하는 일: ' + (', '.join('ft%s 단계%s %s(%s)' % (j['stack'], j['step'], j['unit'], j['progress']) for j in d['jobs']) or '없음 (대기)')]
@@ -1770,6 +1879,10 @@ class Autopilot:
 
     def tick(self):
         self.reap()
+        try:
+            self.supervise()
+        except Exception as e:      # noqa
+            log.info('감시 실패: %s', str(e)[-200:])
         if time.time() - self.t_refresh >= self.cfg['loop']['github_refresh_seconds'] or not self.view:
             try:
                 self.refresh()

@@ -199,3 +199,9 @@ ft30 기본: `FT_MIN_REACH=1e-3`, `FT_SESSIONS=20`, `FT_MATRIX_ALL=1`, 풀이 `F
 - 대기열에 일이 있으면: 새 스택 일(보드·조정)을 시작하지 않고, 돌고 있는 보드 일은 **지금 묶음이 끝나는 경계에서** 멈춘다(claim 풀림, 나중에 이어서). 컴퓨터가 비면 특별 작업을 하나씩, 코어 전부(`cpu.total_cores`)로 돌린다. 메모리 여유가 `min_mem_gb`(기본 28)보다 적으면 기다린다(경고 special_low_mem).
 - 결과: 고아 브랜치 `claude/lab_3way_results` 의 `data/gto_3way_probe/<보드>_full.json` (+ .partial, 로그 꼬리). 이미 이 브랜치나 `claude/ft3way_lab_1` 에 결과가 있으면 건너뛴다.
 - 대기열이 비면 평소 스택 일로 돌아간다. 상태: status.json 의 `special.queue / special.done`, status.md 의 "특별 작업 대기열" 줄.
+
+## 감시·재가동 (2026-11-28 추가) — GitHub Actions 로 도는 스택
+- 대상: `config.json` 의 `supervise.stacks`(지금 60bb=claude/ft60_3way_s5, 100bb=claude/ft100_coord). 30분마다 확인.
+- 판단(`supervise_plan`, 순수 함수·시험 있음): 그 스택의 GitHub Actions 실행이 돌고 있으면 그대로 / 판정 멈춤(converged·stop_report·뿌리 복제 대기)이면 경고만 / 묶음이 다 끝났거나 표·풀이·prepare 가 빠졌으면 `ft-step.yml` 한 단계 실행 시작 / 보드 단계에서 아무도 안 잡고(claim 없음) 3시간 넘게 푸시 없는 묶음이 있으면 그 묶음만 `ft-board.yml` 로 다시 시작.
+- 시작 방법: 워크플로 파일과 작업 목록만 든 작은 고아 브랜치(`claude/gha_step_<S>_s<k>_<시각>`, `claude/gha_ft_<S>_s<k>_<시각>`)를 푸시.
+- 같은 일을 24시간에 3번 넘게 다시 띄우면 멈추고 error 경고(supervise_limit). 상태: status.md 의 "감시 <S>bb" 줄, status.json 의 `supervise`.

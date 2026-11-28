@@ -302,6 +302,24 @@ ap.state['special_done'].append('3way_AcKhJd')
 check('끝난 특별 작업은 대기열에서 빠짐', ap.special_pending() == [])
 d = ap.status_doc(); check('상태에 special 항목', 'special' in d and d['special']['done'][-1] == '3way_AcKhJd')
 
+
+# 감시·재가동 계획(supervise_plan)
+def _sv(phase, K=6, boards=None, why=''):
+    v = A.StackView('60'); v.phase, v.K, v.why = phase, K, why; v.boards = boards or {}; return v
+now_iso = A.iso()
+B = {226: {'bundles': {'s6_t11_B': 'partial'}, 'holders': {'s6_t11_B': [('claude/ft60_board_226', 10.0)]}},
+     1: {'bundles': {'s6_t10_A': 'done'}, 'holders': {'s6_t10_A': []}},
+     2: {'bundles': {'s6_t10_B': 'partial'}, 'holders': {'s6_t10_B': [('claude/ft60_board_2', 0.5)]}},
+     3: {'bundles': {'s6_t12_A': 'none'}, 'holders': {'s6_t12_A': []}}}
+cl = {('60', 6, 'board_3'): {'owner': 'x', 't_heartbeat': now_iso}}
+check('감시: 실행 중이면 아무것도 안 함', A.supervise_plan('60', _sv('collect'), ['gha_step_60_s7(in_progress)'], {}, 3)[0] == 'busy')
+check('감시: 묶음 전부 끝 → ft_step k', A.supervise_plan('60', _sv('collect'), [], {}, 3) == ('step', 6))
+check('감시: 판정 continue → ft_step k', A.supervise_plan('60', _sv('next_tables'), [], {}, 3) == ('step', 6))
+check('감시: 표만 있고 풀이 없음 → ft_step k-1', A.supervise_plan('100', _sv('solve', K=2), [], {}, 3) == ('step', 1))
+check('감시: 판정 멈춤 → hold', A.supervise_plan('60', _sv('halted', why='converged'), [], {}, 3)[0] == 'hold')
+r = A.supervise_plan('60', _sv('boards', boards=B), [], cl, 3)
+check('감시: 멈춘 묶음만 다시(끝남·최근 푸시·claim 제외)', r == ('boards', [(226, ['s6_t11_B'])]), str(r))
+
 # 자체 점검 + 업데이트 실패 시 이전 버전 유지
 r = subprocess.run([sys.executable, os.path.join(HERE, 'autopilot.py'), 'selfcheck'], capture_output=True, text=True, env=dict(os.environ, LAB_CONFIG=cfgp, FT_NO_PUSH='1'))
 check('selfcheck 통과(문법·판정 재현·드라이런)', r.returncode == 0 and 'SELFCHECK_OK' in r.stdout, (r.stdout + r.stderr)[-200:])
