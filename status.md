@@ -1,12 +1,11 @@
-# 연구실 봇 상태: **ok** — 2026-11-28T07:34:15Z (live)
+# 연구실 봇 상태: **warn** — 2026-11-28T11:25:22Z (live)
 
-- 호스트 DESKTOP-FUUG7O5, 가동 13.2시간, 코드 0abdd43f33, CPU 6/6 코어, 메모리 여유 None GB, 디스크 여유 83.6 GB
+- 호스트 DESKTOP-FUUG7O5, 가동 0.0시간, 코드 0abdd43f33, CPU 0/6 코어, 메모리 여유 None GB, 디스크 여유 83.6 GB
 - 특별 작업 대기열(먼저 함): 3way_9c8d2c, 3way_AcKhJd, 3way_7c6c4c
-- 지금 하는 일: ftspecial 단계0 3way_9c8d2c()
-- **30bb** 단계 2: boards — 보드 번호 4/20 끝
-- **40bb** 단계 6: boards — 보드 번호 0/20 끝
-- **60bb** 단계 4: collect — 묶음 전부 끝 → collect
-- **100bb** 단계 2: solve — 단계 2 표는 있음, 트리 풀이 없음
+- 지금 하는 일: 없음 (대기)
+
+## 경고 (status != ok)
+- [warn] bot_restarted bot: 봇이 비정상 종료 후 다시 시작됨(이전 실행이 끝났다는 기록 없음) — 로그 확인 (x1, 처음 2026-11-28T11:25:22Z)
 
 ## 원격 명령 처리
 - c7 enqueue: OK 특별 작업 대기열 추가 3way_9c8d2c (대기 1개) — 돌고 있는 묶음이 끝나면 시작

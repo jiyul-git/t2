@@ -1,20 +1,20 @@
 {
  "schema": "lab_status_v1",
- "status": "ok",
- "time": "2026-11-28T07:34:15Z",
+ "status": "warn",
+ "time": "2026-11-28T11:25:22Z",
  "host": "DESKTOP-FUUG7O5",
  "owner": "t2-lab",
- "uptime_h": 13.2,
+ "uptime_h": 0.0,
  "mode": "live",
  "code_release": "0abdd43f33",
  "code_sha": "0abdd43f3",
  "update": {
-  "pending": null,
+  "pending": "46bf54941c",
   "failed": null
  },
  "cpu": {
   "budget": 6,
-  "in_use": 6,
+  "in_use": 0,
   "load": [
    0.5185546875,
    0.57763671875,
@@ -27,714 +27,123 @@
   "all": false,
   "stacks": []
  },
- "jobs": [
+ "jobs": [],
+ "stacks": {},
+ "alerts": [
   {
-   "stack": "special",
-   "step": 0,
-   "unit": "3way_9c8d2c",
-   "started": "2026-11-28T07:34:15Z",
-   "progress": "",
-   "cpu_idle_min": 0,
-   "file_idle_min": 0
+   "code": "bot_restarted",
+   "severity": "warn",
+   "key": "bot",
+   "msg": "봇이 비정상 종료 후 다시 시작됨(이전 실행이 끝났다는 기록 없음) — 로그 확인",
+   "since": "2026-11-28T11:25:22Z",
+   "last": "2026-11-28T11:25:22Z",
+   "count": 1,
+   "ctx": {},
+   "log_file": "main.log",
+   "log_tail": [
+    "11-26 15:59:14 lab autopilot 시작 (live) 코어 6, 보드 2×워커 3, nice 19, 코드 9559eee644",
+    "11-26 16:00:57 시작: 스택 30 단계 1 coord_next_tables (단계 1 판정 continue → 단계 2 표 만들기)",
+    "11-26 16:01:00 시작: 스택 40 단계 5 board_3 (새로)",
+    "11-26 16:01:15 ft40 보드 3: 시작/재개 — 남은 묶음 ['s5_t01_A', 's5_t11_A', 's5_t21_A', 's5_t31_A']",
+    "11-26 16:01:50 ft30: 도구를 claude/ft60_3way_s5 기준으로 갱신(행렬 끝점·균형 패널·FT_MIN_REACH) — 조정 브랜치에 같이 올림",
+    "11-26 16:06:03 끝: ('30', 1, 'coord_next_tables')",
+    "11-26 16:06:08 시작: 스택 40 단계 5 board_4 (인계(남의 것 82시간 멈춤))",
+    "11-26 16:06:39 ft40 보드 4: 시작/재개 — 남은 묶음 ['s5_t31_B']",
+    "11-26 17:02:36 원격 명령 c1 stack → OK 스택 40 설정 {'enabled': False}",
+    "11-26 17:02:36 원격 명령 c2 cancel → OK cancel 40|*|board_3 (실행 중 1개 취소)",
+    "11-26 17:02:36 원격 명령 c3 cancel → OK cancel 40|*|board_4 (실행 중 1개 취소)",
+    "11-26 17:02:36 원격 명령 c4 config → OK loop.coord_idle_hours = 0.25",
+    "11-26 17:02:36 ft40 보드 3: 멈춤(1번째) 종료코드 -15",
+    "11-26 17:02:36 ft40 보드 4: 멈춤(1번째) 종료코드 -15",
+    "11-26 17:03:37 일 실패 ('40', 5, 'board_3')",
+    "Traceback (most recent call last):",
+    "  File \"/home/user/t2lab/current/tools/gto_fulltree/lab_autopilot/autopilot.py\", line 670, in run",
+    "    self.result = self.fn(self)",
+    "  File \"/home/user/t2lab/current/tools/gto_fulltree/lab_autopilot/autopilot.py\", line 976, in job_board",
+    "    raise JobFail('cancelled', '원격 명령으로 취소')",
+    "JobFail: 원격 명령으로 취소",
+    "11-26 17:03:37 일 실패 ('40', 5, 'board_4')",
+    "Traceback (most recent call last):",
+    "  File \"/home/user/t2lab/current/tools/gto_fulltree/lab_autopilot/autopilot.py\", line 670, in run",
+    "    self.result = self.fn(self)",
+    "  File \"/home/user/t2lab/current/tools/gto_fulltree/lab_autopilot/autopilot.py\", line 976, in job_board",
+    "    raise JobFail('cancelled', '원격 명령으로 취소')",
+    "JobFail: 원격 명령으로 취소",
+    "11-26 17:07:43 취소됨(원격 명령): ('40', 5, 'board_3')",
+    "11-26 17:07:47 취소됨(원격 명령): ('40', 5, 'board_4')",
+    "11-26 17:11:33 새 봇 코드 89a54b7211 자체 점검 통과 — 진행 중인 묶음이 끝나는 대로 교체",
+    "11-26 17:11:34 봇을 다시 시작합니다(새 코드 89a54b7211)",
+    "11-26 17:11:37 새 코드로 교체 — 바로 다시 시작",
+    "11-26 17:11:38 lab autopilot 시작 (live) 코어 6, 보드 2×워커 3, nice 19, 코드 89a54b7211",
+    "11-26 17:15:23 시작: 스택 30 단계 2 coord_solve (단계 2 표는 있음, 트리 풀이 없음)",
+    "11-26 17:15:32 계산기(풀이·덤프·내보내기) 빌드/갱신 — 시간이 걸림",
+    "11-26 18:47:32 원격 명령 c5 stack → OK 스택 60 설정 {'enabled': False}",
+    "11-26 18:57:42 끝: ('30', 2, 'coord_solve')",
+    "11-26 18:57:59 시작: 스택 30 단계 2 coord_prepare (단계 2 풀이는 있음, prepare 없음)",
+    "11-26 19:03:02 끝: ('30', 2, 'coord_prepare')",
+    "11-26 19:03:03 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-26 19:33:55 시작: 스택 30 단계 2 board_1 (새로)",
+    "11-26 19:33:58 시작: 스택 30 단계 2 board_2 (새로)",
+    "11-26 19:34:06 ft30 보드 1: 시작/재개 — 남은 묶음 ['s2_t00_A', 's2_t10_A', 's2_t20_A']",
+    "11-26 19:34:12 ft30 보드 2: 시작/재개 — 남은 묶음 ['s2_t00_B', 's2_t10_B', 's2_t20_B']",
+    "11-27 06:45:37 ft30 보드 2: 시작/재개 — 남은 묶음 ['s2_t10_B', 's2_t20_B']",
+    "11-27 06:57:17 ft30 보드 1: 시작/재개 — 남은 묶음 ['s2_t10_A', 's2_t20_A']",
+    "11-27 10:15:23 ft30 보드 2: 시작/재개 — 남은 묶음 ['s2_t20_B']",
+    "11-27 10:24:09 ft30 보드 1: 시작/재개 — 남은 묶음 ['s2_t20_A']",
+    "11-27 13:47:43 끝: ('30', 2, 'board_1')",
+    "11-27 13:47:46 끝: ('30', 2, 'board_2')",
+    "11-27 13:48:02 시작: 스택 30 단계 2 board_3 (새로)",
+    "11-27 13:48:05 시작: 스택 30 단계 2 board_4 (새로)",
+    "11-27 13:48:12 ft30 보드 3: 시작/재개 — 남은 묶음 ['s2_t01_A', 's2_t11_A', 's2_t21_A']",
+    "11-27 13:48:16 ft30 보드 4: 시작/재개 — 남은 묶음 ['s2_t01_B', 's2_t11_B', 's2_t21_B']",
+    "11-27 20:29:56 ft30 보드 4: 시작/재개 — 남은 묶음 ['s2_t11_B', 's2_t21_B']",
+    "11-27 20:32:39 ft30 보드 3: 시작/재개 — 남은 묶음 ['s2_t11_A', 's2_t21_A']",
+    "11-27 23:55:26 ft30 보드 4: 시작/재개 — 남은 묶음 ['s2_t21_B']",
+    "11-27 23:56:49 ft30 보드 3: 시작/재개 — 남은 묶음 ['s2_t21_A']",
+    "11-27 23:57:03 새 봇 코드 0abdd43f33 자체 점검 통과 — 진행 중인 묶음이 끝나는 대로 교체",
+    "11-27 23:57:06 원격 명령 c6 pause → OK 새 일 시작 안 함(진행 중인 일은 계속)",
+    "11-28 03:23:24 끝: ('30', 2, 'board_3')",
+    "11-28 03:23:28 끝: ('30', 2, 'board_4')",
+    "11-28 03:23:30 봇을 다시 시작합니다(새 코드 0abdd43f33)",
+    "11-28 03:23:33 새 코드로 교체 — 바로 다시 시작",
+    "11-28 03:23:33 lab autopilot 시작 (live) 코어 6, 보드 2×워커 3, nice 19, 코드 0abdd43f33",
+    "11-28 03:28:32 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 03:58:48 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 04:29:02 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 04:59:14 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 05:29:26 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 05:59:38 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 06:29:51 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 07:00:03 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 07:30:17 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 08:00:29 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 08:30:41 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 09:00:56 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 09:31:08 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 10:01:23 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 10:31:38 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 11:01:50 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 11:32:03 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 12:02:17 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 12:32:29 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 13:02:41 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 13:32:54 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 14:03:06 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 14:33:19 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 15:03:32 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 15:33:44 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 16:03:59 할 일 없음(모두 끝났거나 다른 쪽이 잡음) — 30분 뒤 다시 확인",
+    "11-28 16:34:15 원격 명령 c7 enqueue → OK 특별 작업 대기열 추가 3way_9c8d2c (대기 1개) — 돌고 있는 묶음이 끝나면 시작",
+    "11-28 16:34:15 원격 명령 c8 enqueue → OK 특별 작업 대기열 추가 3way_AcKhJd (대기 2개) — 돌고 있는 묶음이 끝나면 시작",
+    "11-28 16:34:15 원격 명령 c9 enqueue → OK 특별 작업 대기열 추가 3way_7c6c4c (대기 3개) — 돌고 있는 묶음이 끝나면 시작",
+    "11-28 16:34:15 원격 명령 c10 stack → OK 스택 100 설정 {'coord_actions': False}",
+    "11-28 16:34:15 원격 명령 c11 resume → OK 다시 시작",
+    "11-28 16:34:15 특별 작업 시작: {'id': '3way_9c8d2c', 'kind': '3way_full', 'board': '9c8d2c', 'iters': 300}",
+    "11-28 16:44:38 새 봇 코드 46bf54941c 자체 점검 통과 — 진행 중인 묶음이 끝나는 대로 교체",
+    "11-28 20:25:22 lab autopilot 시작 (live) 코어 6, 보드 2×워커 3, nice 19, 코드 0abdd43f33"
+   ]
   }
  ],
- "stacks": {
-  "30": {
-   "phase": "boards",
-   "why": "보드 번호 4/20 끝",
-   "step": 2,
-   "coord_tip_age_h": 299.6,
-   "stall_streak": 0,
-   "boards": {
-    "1": {
-     "done": true,
-     "bundles": {
-      "s2_t00_A": "done",
-      "s2_t10_A": "done",
-      "s2_t20_A": "done"
-     },
-     "tip_age_h": 26.8,
-     "claim": null
-    },
-    "2": {
-     "done": true,
-     "bundles": {
-      "s2_t00_B": "done",
-      "s2_t10_B": "done",
-      "s2_t20_B": "done"
-     },
-     "tip_age_h": 26.8,
-     "claim": null
-    },
-    "3": {
-     "done": true,
-     "bundles": {
-      "s2_t01_A": "done",
-      "s2_t11_A": "done",
-      "s2_t21_A": "done"
-     },
-     "tip_age_h": 13.2,
-     "claim": null
-    },
-    "4": {
-     "done": true,
-     "bundles": {
-      "s2_t01_B": "done",
-      "s2_t11_B": "done",
-      "s2_t21_B": "done"
-     },
-     "tip_age_h": 13.2,
-     "claim": null
-    },
-    "5": {
-     "done": false,
-     "bundles": {
-      "s2_t02_A": "none",
-      "s2_t12_A": "none",
-      "s2_t22_A": "none"
-     },
-     "tip_age_h": 463.4,
-     "claim": null
-    },
-    "6": {
-     "done": false,
-     "bundles": {
-      "s2_t02_B": "none",
-      "s2_t12_B": "none",
-      "s2_t22_B": "none"
-     },
-     "tip_age_h": 383.0,
-     "claim": null
-    },
-    "7": {
-     "done": false,
-     "bundles": {
-      "s2_t03_A": "none",
-      "s2_t13_A": "none",
-      "s2_t23_A": "none"
-     },
-     "tip_age_h": 381.9,
-     "claim": null
-    },
-    "8": {
-     "done": false,
-     "bundles": {
-      "s2_t03_B": "none",
-      "s2_t13_B": "none",
-      "s2_t23_B": "none"
-     },
-     "tip_age_h": 377.2,
-     "claim": null
-    },
-    "9": {
-     "done": false,
-     "bundles": {
-      "s2_t04_A": "none",
-      "s2_t14_A": "none"
-     },
-     "tip_age_h": 375.5,
-     "claim": null
-    },
-    "10": {
-     "done": false,
-     "bundles": {
-      "s2_t04_B": "none",
-      "s2_t14_B": "none"
-     },
-     "tip_age_h": 371.5,
-     "claim": null
-    },
-    "11": {
-     "done": false,
-     "bundles": {
-      "s2_t05_A": "none",
-      "s2_t15_A": "none"
-     },
-     "tip_age_h": 363.9,
-     "claim": null
-    },
-    "12": {
-     "done": false,
-     "bundles": {
-      "s2_t05_B": "none",
-      "s2_t15_B": "none"
-     },
-     "tip_age_h": 360.9,
-     "claim": null
-    },
-    "13": {
-     "done": false,
-     "bundles": {
-      "s2_t06_A": "none",
-      "s2_t16_A": "none"
-     },
-     "tip_age_h": 355.1,
-     "claim": null
-    },
-    "14": {
-     "done": false,
-     "bundles": {
-      "s2_t06_B": "none",
-      "s2_t16_B": "none"
-     },
-     "tip_age_h": 352.0,
-     "claim": null
-    },
-    "15": {
-     "done": false,
-     "bundles": {
-      "s2_t07_A": "none",
-      "s2_t17_A": "none"
-     },
-     "tip_age_h": 347.0,
-     "claim": null
-    },
-    "16": {
-     "done": false,
-     "bundles": {
-      "s2_t07_B": "none",
-      "s2_t17_B": "none"
-     },
-     "tip_age_h": 312.7,
-     "claim": null
-    },
-    "17": {
-     "done": false,
-     "bundles": {
-      "s2_t08_A": "none",
-      "s2_t18_A": "none"
-     },
-     "tip_age_h": 306.9,
-     "claim": null
-    },
-    "18": {
-     "done": false,
-     "bundles": {
-      "s2_t08_B": "none",
-      "s2_t18_B": "none"
-     },
-     "tip_age_h": 303.7,
-     "claim": null
-    },
-    "19": {
-     "done": false,
-     "bundles": {
-      "s2_t09_A": "none",
-      "s2_t19_A": "none"
-     },
-     "tip_age_h": 299.8,
-     "claim": null
-    },
-    "20": {
-     "done": false,
-     "bundles": {
-      "s2_t09_B": "none",
-      "s2_t19_B": "none"
-     },
-     "tip_age_h": 462.6,
-     "claim": null
-    }
-   }
-  },
-  "40": {
-   "phase": "boards",
-   "why": "보드 번호 0/20 끝",
-   "step": 6,
-   "coord_tip_age_h": 26.3,
-   "stall_streak": 0,
-   "boards": {
-    "1": {
-     "done": false,
-     "bundles": {
-      "s6_t00_A": "partial",
-      "s6_t10_A": "partial",
-      "s6_t20_A": "partial",
-      "s6_t30_A": "partial"
-     },
-     "tip_age_h": 26.2,
-     "claim": null
-    },
-    "2": {
-     "done": false,
-     "bundles": {
-      "s6_t00_B": "partial",
-      "s6_t10_B": "partial",
-      "s6_t20_B": "partial",
-      "s6_t30_B": "none"
-     },
-     "tip_age_h": 26.2,
-     "claim": null
-    },
-    "3": {
-     "done": false,
-     "bundles": {
-      "s6_t01_A": "partial",
-      "s6_t11_A": "partial",
-      "s6_t21_A": "partial",
-      "s6_t31_A": "none"
-     },
-     "tip_age_h": 26.2,
-     "claim": null
-    },
-    "4": {
-     "done": false,
-     "bundles": {
-      "s6_t01_B": "partial",
-      "s6_t11_B": "partial",
-      "s6_t21_B": "partial",
-      "s6_t31_B": "partial"
-     },
-     "tip_age_h": 26.2,
-     "claim": null
-    },
-    "5": {
-     "done": false,
-     "bundles": {
-      "s6_t02_A": "partial",
-      "s6_t12_A": "partial",
-      "s6_t22_A": "partial",
-      "s6_t32_A": "partial"
-     },
-     "tip_age_h": 15.9,
-     "claim": null
-    },
-    "6": {
-     "done": false,
-     "bundles": {
-      "s6_t02_B": "partial",
-      "s6_t12_B": "partial",
-      "s6_t22_B": "partial",
-      "s6_t32_B": "partial"
-     },
-     "tip_age_h": 26.2,
-     "claim": null
-    },
-    "7": {
-     "done": false,
-     "bundles": {
-      "s6_t03_A": "partial",
-      "s6_t13_A": "partial",
-      "s6_t23_A": "none",
-      "s6_t33_A": "partial"
-     },
-     "tip_age_h": 25.9,
-     "claim": null
-    },
-    "8": {
-     "done": false,
-     "bundles": {
-      "s6_t03_B": "partial",
-      "s6_t13_B": "none",
-      "s6_t23_B": "partial",
-      "s6_t33_B": "none"
-     },
-     "tip_age_h": 26.2,
-     "claim": null
-    },
-    "9": {
-     "done": false,
-     "bundles": {
-      "s6_t04_A": "partial",
-      "s6_t14_A": "none",
-      "s6_t24_A": "partial",
-      "s6_t34_A": "none"
-     },
-     "tip_age_h": 26.2,
-     "claim": null
-    },
-    "10": {
-     "done": false,
-     "bundles": {
-      "s6_t04_B": "partial",
-      "s6_t14_B": "none",
-      "s6_t24_B": "none",
-      "s6_t34_B": "none"
-     },
-     "tip_age_h": 36.5,
-     "claim": null
-    },
-    "11": {
-     "done": false,
-     "bundles": {
-      "s6_t05_A": "partial",
-      "s6_t15_A": "none",
-      "s6_t25_A": "none"
-     },
-     "tip_age_h": 35.1,
-     "claim": null
-    },
-    "12": {
-     "done": false,
-     "bundles": {
-      "s6_t05_B": "partial",
-      "s6_t15_B": "none",
-      "s6_t25_B": "none"
-     },
-     "tip_age_h": 35.1,
-     "claim": null
-    },
-    "13": {
-     "done": false,
-     "bundles": {
-      "s6_t06_A": "partial",
-      "s6_t16_A": "none",
-      "s6_t26_A": "none"
-     },
-     "tip_age_h": 30.6,
-     "claim": null
-    },
-    "14": {
-     "done": false,
-     "bundles": {
-      "s6_t06_B": "partial",
-      "s6_t16_B": "none",
-      "s6_t26_B": "none"
-     },
-     "tip_age_h": 16.3,
-     "claim": null
-    },
-    "15": {
-     "done": false,
-     "bundles": {
-      "s6_t07_A": "partial",
-      "s6_t17_A": "none",
-      "s6_t27_A": "none"
-     },
-     "tip_age_h": 34.5,
-     "claim": null
-    },
-    "16": {
-     "done": false,
-     "bundles": {
-      "s6_t07_B": "partial",
-      "s6_t17_B": "none",
-      "s6_t27_B": "none"
-     },
-     "tip_age_h": 34.3,
-     "claim": null
-    },
-    "17": {
-     "done": false,
-     "bundles": {
-      "s6_t08_A": "partial",
-      "s6_t18_A": "none",
-      "s6_t28_A": "none"
-     },
-     "tip_age_h": 37.4,
-     "claim": null
-    },
-    "18": {
-     "done": false,
-     "bundles": {
-      "s6_t08_B": "partial",
-      "s6_t18_B": "none",
-      "s6_t28_B": "none"
-     },
-     "tip_age_h": 34.6,
-     "claim": null
-    },
-    "19": {
-     "done": false,
-     "bundles": {
-      "s6_t09_A": "partial",
-      "s6_t19_A": "none",
-      "s6_t29_A": "none"
-     },
-     "tip_age_h": 34.8,
-     "claim": null
-    },
-    "20": {
-     "done": false,
-     "bundles": {
-      "s6_t09_B": "partial",
-      "s6_t19_B": "none",
-      "s6_t29_B": "none"
-     },
-     "tip_age_h": 35.1,
-     "claim": null
-    }
-   }
-  },
-  "60": {
-   "phase": "collect",
-   "why": "묶음 전부 끝 → collect",
-   "step": 4,
-   "coord_tip_age_h": 304.0,
-   "stall_streak": 0,
-   "boards": {
-    "1": {
-     "done": true,
-     "bundles": {
-      "s4_t03_A": "done",
-      "s4_t19_A": "done",
-      "s4_t29_A": "done",
-      "s4_t39_A": "done"
-     },
-     "tip_age_h": 311.2,
-     "claim": null
-    },
-    "2": {
-     "done": true,
-     "bundles": {
-      "s4_t03_B": "done",
-      "s4_t19_B": "done",
-      "s4_t29_B": "done",
-      "s4_t39_B": "done"
-     },
-     "tip_age_h": 298.4,
-     "claim": null
-    },
-    "3": {
-     "done": true,
-     "bundles": {
-      "s4_t04_A": "done",
-      "s4_t18_A": "done",
-      "s4_t28_A": "done",
-      "s4_t38_A": "done"
-     },
-     "tip_age_h": 314.7,
-     "claim": null
-    },
-    "4": {
-     "done": true,
-     "bundles": {
-      "s4_t04_B": "done",
-      "s4_t18_B": "done",
-      "s4_t28_B": "done",
-      "s4_t38_B": "done"
-     },
-     "tip_age_h": 312.4,
-     "claim": null
-    },
-    "5": {
-     "done": true,
-     "bundles": {
-      "s4_t00_A": "done",
-      "s4_t17_A": "done",
-      "s4_t27_A": "done",
-      "s4_t37_A": "done"
-     },
-     "tip_age_h": 310.0,
-     "claim": null
-    },
-    "6": {
-     "done": true,
-     "bundles": {
-      "s4_t00_B": "done",
-      "s4_t17_B": "done",
-      "s4_t27_B": "done",
-      "s4_t37_B": "done"
-     },
-     "tip_age_h": 315.2,
-     "claim": null
-    },
-    "7": {
-     "done": true,
-     "bundles": {
-      "s4_t01_A": "done",
-      "s4_t10_A": "done",
-      "s4_t20_A": "done",
-      "s4_t30_A": "done"
-     },
-     "tip_age_h": 308.7,
-     "claim": null
-    },
-    "8": {
-     "done": true,
-     "bundles": {
-      "s4_t01_B": "done",
-      "s4_t10_B": "done",
-      "s4_t20_B": "done",
-      "s4_t30_B": "done"
-     },
-     "tip_age_h": 301.1,
-     "claim": null
-    },
-    "9": {
-     "done": true,
-     "bundles": {
-      "s4_t02_A": "done",
-      "s4_t11_A": "done",
-      "s4_t21_A": "done",
-      "s4_t31_A": "done"
-     },
-     "tip_age_h": 309.7,
-     "claim": null
-    },
-    "10": {
-     "done": true,
-     "bundles": {
-      "s4_t02_B": "done",
-      "s4_t11_B": "done",
-      "s4_t21_B": "done",
-      "s4_t31_B": "done"
-     },
-     "tip_age_h": 308.7,
-     "claim": null
-    },
-    "11": {
-     "done": true,
-     "bundles": {
-      "s4_t05_A": "done",
-      "s4_t12_A": "done"
-     },
-     "tip_age_h": 314.7,
-     "claim": null
-    },
-    "12": {
-     "done": true,
-     "bundles": {
-      "s4_t05_B": "done",
-      "s4_t12_B": "done",
-      "s4_t22_B": "done",
-      "s4_t32_B": "done"
-     },
-     "tip_age_h": 311.4,
-     "claim": null
-    },
-    "13": {
-     "done": true,
-     "bundles": {
-      "s4_t06_A": "done",
-      "s4_t13_A": "done",
-      "s4_t23_A": "done",
-      "s4_t33_A": "done"
-     },
-     "tip_age_h": 297.9,
-     "claim": null
-    },
-    "14": {
-     "done": true,
-     "bundles": {
-      "s4_t06_B": "done",
-      "s4_t13_B": "done",
-      "s4_t23_B": "done",
-      "s4_t33_B": "done"
-     },
-     "tip_age_h": 309.4,
-     "claim": null
-    },
-    "15": {
-     "done": true,
-     "bundles": {
-      "s4_t07_A": "done",
-      "s4_t14_A": "done",
-      "s4_t24_A": "done",
-      "s4_t34_A": "done"
-     },
-     "tip_age_h": 308.6,
-     "claim": null
-    },
-    "16": {
-     "done": true,
-     "bundles": {
-      "s4_t07_B": "done",
-      "s4_t14_B": "done"
-     },
-     "tip_age_h": 315.1,
-     "claim": null
-    },
-    "17": {
-     "done": true,
-     "bundles": {
-      "s4_t08_A": "done",
-      "s4_t15_A": "done"
-     },
-     "tip_age_h": 314.2,
-     "claim": null
-    },
-    "18": {
-     "done": true,
-     "bundles": {
-      "s4_t08_B": "done",
-      "s4_t15_B": "done"
-     },
-     "tip_age_h": 315.3,
-     "claim": null
-    },
-    "19": {
-     "done": true,
-     "bundles": {
-      "s4_t09_A": "done",
-      "s4_t16_A": "done"
-     },
-     "tip_age_h": 319.1,
-     "claim": null
-    },
-    "20": {
-     "done": true,
-     "bundles": {
-      "s4_t09_B": "done",
-      "s4_t16_B": "done"
-     },
-     "tip_age_h": 311.2,
-     "claim": null
-    },
-    "21": {
-     "done": true,
-     "bundles": {
-      "s4_t22_A": "done",
-      "s4_t32_A": "done"
-     },
-     "tip_age_h": 317.1,
-     "claim": null
-    },
-    "22": {
-     "done": true,
-     "bundles": {
-      "s4_t24_B": "done",
-      "s4_t34_B": "done"
-     },
-     "tip_age_h": 316.5,
-     "claim": null
-    },
-    "23": {
-     "done": true,
-     "bundles": {
-      "s4_t25_A": "done",
-      "s4_t35_A": "done"
-     },
-     "tip_age_h": 315.3,
-     "claim": null
-    },
-    "24": {
-     "done": true,
-     "bundles": {
-      "s4_t25_B": "done",
-      "s4_t35_B": "done"
-     },
-     "tip_age_h": 311.8,
-     "claim": null
-    },
-    "25": {
-     "done": true,
-     "bundles": {
-      "s4_t26_A": "done",
-      "s4_t36_A": "done"
-     },
-     "tip_age_h": 309.3,
-     "claim": null
-    },
-    "26": {
-     "done": true,
-     "bundles": {
-      "s4_t26_B": "done",
-      "s4_t36_B": "done"
-     },
-     "tip_age_h": 26.2,
-     "claim": null
-    }
-   }
-  },
-  "100": {
-   "phase": "solve",
-   "why": "단계 2 표는 있음, 트리 풀이 없음",
-   "step": 2,
-   "coord_tip_age_h": 0.1,
-   "stall_streak": 0
-  }
- },
- "alerts": [],
  "recent_errors": [],
  "control": {
   "applied": {
