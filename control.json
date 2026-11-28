@@ -1,5 +1,5 @@
 {
- "seq": 3,
+ "seq": 4,
  "commands": [
   {
    "id": "c1",
@@ -35,6 +35,37 @@
    "id": "c6",
    "cmd": "pause",
    "note": "세 명 플랍 전체 풀이 3개를 먼저 하기 위해 새 일 시작 중지(진행 중 묶음은 계속). 새 봇 코드(특별 작업 대기열) 적용 뒤 enqueue + resume 예정"
+  },
+  {
+   "id": "c7",
+   "cmd": "enqueue",
+   "kind": "3way_full",
+   "board": "9c8d2c",
+   "iters": 300
+  },
+  {
+   "id": "c8",
+   "cmd": "enqueue",
+   "kind": "3way_full",
+   "board": "AcKhJd",
+   "iters": 300
+  },
+  {
+   "id": "c9",
+   "cmd": "enqueue",
+   "kind": "3way_full",
+   "board": "7c6c4c",
+   "iters": 300
+  },
+  {
+   "id": "c10",
+   "cmd": "stack",
+   "stack": "100",
+   "coord_actions": false
+  },
+  {
+   "id": "c11",
+   "cmd": "resume"
   }
  ]
 }
